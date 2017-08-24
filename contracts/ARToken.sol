@@ -12,7 +12,6 @@ contract ARToken is StandardToken {
   uint public constant decimals = 6;
   uint constant TOKEN_LIMIT = 7 * 1e9 * 1e6;
 
-
   // State variables
   // ===============
   address public manager;
@@ -26,7 +25,6 @@ contract ARToken is StandardToken {
   function ARToken(address _manager) {
     manager = _manager;
   }
-
 
   // Priveleged functions
   // ====================
@@ -57,7 +55,6 @@ contract ARToken is StandardToken {
     tokensAreFrozen = false;
   }
 
-
   // ERC20 functions
   // =========================
   function transfer(address _to, uint _value) returns (bool success) {
@@ -65,12 +62,10 @@ contract ARToken is StandardToken {
     super.transfer(_to, _value);
   }
 
-
   function transferFrom(address _from, address _to, uint _value) returns (bool success) {
     require(!tokensAreFrozen);
     super.transferFrom(_from, _to, _value);
   }
-
 
   function approve(address _spender, uint _value) returns (bool success) {
     require(!tokensAreFrozen);
