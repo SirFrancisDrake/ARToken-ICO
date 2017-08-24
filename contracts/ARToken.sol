@@ -36,8 +36,9 @@ contract ARToken is StandardToken {
   // Mint some tokens and assign them to an address
   function mint(address _holder, uint _value) onlyByManager external {
     require(_value != 0);
-    require(_value <= TOKEN_LIMIT);
     require(totalSupply + _value <= TOKEN_LIMIT);
+    // Making double sure uint doesn't overflow and wrap back
+    require(totalSupply + _value > totalSupply); 
     require(mintingIsAllowed);
 
     balances[_holder] += _value;
