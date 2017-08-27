@@ -9,8 +9,8 @@ contract ARToken is StandardToken {
   // =========
   string public constant name = "ARToken";
   string public constant symbol = "ART";
-  uint public constant decimals = 6;
-  uint constant TOKEN_LIMIT = 7 * 1e9 * 1e6;
+  uint public constant decimals = 18;
+  uint constant TOKEN_LIMIT = 10 * 1e9 * 1e18;
 
   // State variables
   // ===============
@@ -43,7 +43,6 @@ contract ARToken is StandardToken {
 
     balances[_holder] += _value;
     totalSupply += _value;
-    Transfer(0x0, _holder, _value);
   }
 
   // Permanently disable minting, effectively burning remaining tokens
