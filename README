@@ -1,6 +1,7 @@
 
 A token with minimal complete ERC20 functionality. 
 
-No direct ETH purchases are allowed, a trusted address mints and distributes all the tokens up to the token limit, then disables minting permanently.
-
-Things like assigning bonuses, minting tokens for the founders' endowment multisig, and handling contributions (including Ethereum) are done off-chain.
+A crowdsale contract that:
+1. Accepts direct purchases for ETH;
+2. Allows the off-chain backend to mint tokens;
+3. Assigns Fibonacci bonuses.
