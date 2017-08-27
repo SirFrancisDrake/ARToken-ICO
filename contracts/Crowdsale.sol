@@ -106,7 +106,7 @@ contract Crowdsale is GenericCrowdsale {
         // 3. If there's a tier that was reached but was not filled, it gets no bonuses.
         uint totalTokenSupply = totalWeiGathered * tokenRate;
         for (uint i = 0; i<milestonesReached; i++)
-            totalTokenSupply += 17500 ether * calculateBonusForTier(17500 ether, i);
+            totalTokenSupply += calculateBonusForTier(17500 ether, i);
 
         uint tokensForFounders = totalTokenSupply * 18 / 100;
         uint tokensForPartners = totalTokenSupply * 12 / 100;
