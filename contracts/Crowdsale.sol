@@ -14,12 +14,12 @@ import './GenericCrowdsale.sol';
 contract Crowdsale is GenericCrowdsale {
     // Token information
     uint constant tokenRate = 34996; // 1 ETH = 34996 ARTokens, 1 wei = 34996 / 1e18 ARTokens
-    uint constant hardCap = 7 * 1e9 * 1e18; // 7 billion tokens with 18 decimal digits
     ARToken tokenContract;
-    address foundersWallet;          // Where do the founders' token go to, a smart contract with vesting.
+    address foundersWallet; // Where the founders' tokens go, a smart contract with vesting.
     address partnersWallet; // A wallet that distributes the tokens to the early contributors.
 
     // Crowdsale progress
+    uint constant hardCap = 175000 ether;
     uint totalWeiGathered = 0;
     bool foundersAndPartnersTokensIssued = false;
 
