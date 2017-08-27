@@ -43,7 +43,10 @@ contract GenericCrowdsale {
      * @param _contribution The Ether equivalent (in wei) of the contribution received off-chain.
      * @param _txHash Transaction hash from the chain where the contribution was received.
      */
-    function offchainBuyTokens(address _beneficiary, uint _contribution, string _txHash) onlyManager external returns (bool success, uint overcap);
+    function offchainBuyTokens(address _beneficiary, 
+                               uint _contribution, 
+                               string _txHash) 
+                           onlyManager external returns (bool success, uint overcap);
 
     /**
      * @dev Issues the combined bonus for every contribution made by the _beneficiary. Only after the ICO closes.
