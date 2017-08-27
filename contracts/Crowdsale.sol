@@ -20,7 +20,6 @@ contract Crowdsale is GenericCrowdsale {
     address partnersWallet; // A wallet that distributes the tokens to the early contributors.
 
     // Crowdsale progress
-    uint tokensSold = 0;
     uint totalWeiGathered = 0;
     bool foundersAndPartnersTokensIssued = false;
 
@@ -90,9 +89,7 @@ contract Crowdsale is GenericCrowdsale {
         uint tierBonus;
         uint totalBonus = 0;
         for (uint i = 0; i<milestonesReached; i++) {
-            // For each failed funding milestone, the descending bonus staircase loses a step from the left.
-            // Thus to calculate the bonus, offset the sequence by 10 - (total milestones reached)
-            tierBonus = contributedAtMilestone[_beneficiary][i] * fibonacci[10 - milestonesReached + i] / 100;
+            tierBonus = calculateBonusForTier( contributedAtMilestone[_beneficiary][i], i );
             tokenContract.mint(_beneficiary, tierBonus);
             contributedAtMilestone[_beneficiary][i] = 0;
             totalBonus += tierBonus;
@@ -103,8 +100,16 @@ contract Crowdsale is GenericCrowdsale {
     function rewardFoundersAndPartners() external crowdsaleFinished {
         require( !foundersAndPartnersTokensIssued );
 
-        uint tokensForFounders = tokensSold * 18 / 100;
-        uint tokensForPartners = tokensSold * 12 / 100;
+        // Calculating the total amount of tokens to be issued:
+        // 1. Total wei received * rate of tokens created per wei;
+        // 2. For each milestone reached, a bonus for total 17500 ether collected during that tier;
+        // 3. If there's a tier that was reached but was not filled, it gets no bonuses.
+        uint totalTokenSupply = totalWeiGathered * tokenRate;
+        for (uint i = 0; i<milestonesReached; i++)
+            totalTokenSupply += 17500 ether * calculateBonus(17500 ether, i);
+
+        uint tokensForFounders = totalTokenSupply * 18 / 100;
+        uint tokensForPartners = totalTokenSupply * 12 / 100;
 
         foundersAndPartnersTokensIssued = true;
         tokenContract.mint(foundersWallet, tokensForFounders);
@@ -149,13 +154,11 @@ contract Crowdsale is GenericCrowdsale {
     }
 
     function issueTokens(address _beneficiary, uint _contribution) internal returns (bool success) {
+        require( totalWeiGathered + contribution <= hardCap );
+        require( totalWeiGathered + contribution > totalWeiGathered );
+
         uint tokensToMint = _contribution * tokenRate;
-        require( tokensToMint + tokensSold <= hardCap );
 
-        require( tokensToMint + tokensSold <= hardCap );
-        require( tokensToMint + tokensSold > tokensSold ); // uint overflow protection just in case
-
-        tokensSold += tokensToMint;
         tokenContract.mint(msg.sender, tokensToMint);
         totalWeiGathered += _contribution;
         recordTransaction(_beneficiary, _contribution);
@@ -164,10 +167,16 @@ contract Crowdsale is GenericCrowdsale {
     }
 
     function calculateOvercap(uint _contribution) constant internal returns (uint overcap) {
-        if (_contribution * tokenRate + tokensSold > hardCap) {
-            uint weiToCap = (hardCap - tokensSold) / tokenRate;
-            return _contribution - weiToCap;
+        require( _contribution + totalWeiGathered > totalWeiGathered ); // Overflow protection just in case.
+        if (_contribution + totalWeiGathered > hardCap) {
+            return (_contribution + totalWeiGathered - hardCap);
         } else return 0;
+    }
+
+    function calculateBonusForTier(uint _contribution, uint _tier) constant internal returns (uint bonus) {
+        // For each failed funding milestone, the descending bonus staircase loses a step from the left.
+        // Thus to calculate the bonus, offset the sequence by 10 - (total milestones reached)
+        return ( _contribution * fibonacci[10 - milestonesReached + _tier] / 100 );
     }
 
     function min(uint _a, uint _b) constant internal returns (uint result) {
