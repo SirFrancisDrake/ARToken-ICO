@@ -44,7 +44,7 @@ contract VestingWallet {
             tokensToRelease += tokensPerBatch;
         } while (now > nextPeriod);
         // If vesting has finished, just transfer the remaining tokens.
-        if (periodsPassed == totalPeriods) {
+        if (periodsPassed >= totalPeriods) {
             tokensToRelease = tokenContract.balanceOf(this);
             nextPeriod = 0x0;
         }
