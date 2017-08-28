@@ -25,13 +25,13 @@ contract GenericCrowdsale {
      * @param _txHash Transaction hash from the chain where the money was received.
      * @param _tokensIssued The amount of tokens that was assigned to the holder.
      * @param _overcap The amount of Ether (in wei) that went over the cap and SHOUD BE returned off-chain.
+     * @param totalWeiBeforeContribution Total gathered funds before contribution. Use to track bonuses
      */
-    event OffchainTokenPurchase(address _beneficiary, uint _contribution, string _txHash, uint _tokensIssued, uint _overcap);
+    event OffchainTokenPurchase(address _beneficiary, uint _contribution, string _txHash, 
+                                uint _tokensIssued, uint _overcap, uint totalWeiBeforeContribution);
     event BonusIssued(address _beneficiary, uint _bonusTokensIssued);
-    event FoundersAndPartnersTokensIssued(address foundersWallet, 
-                                          uint tokensForFounders, 
-                                          address partnersWallet, 
-                                          uint tokensForPartners);
+    event FoundersAndPartnersTokensIssued(address foundersWallet, uint tokensForFounders, 
+                                          address partnersWallet, uint tokensForPartners);
 
     // For contributors on Ethereum
     function buyTokens() public payable returns (bool success);
@@ -46,7 +46,9 @@ contract GenericCrowdsale {
     function offchainBuyTokens(address _beneficiary, 
                                uint _contribution, 
                                string _txHash) 
-                           onlyManager external returns (bool success, uint overcap);
+                           onlyManager external returns (bool success, 
+                                                         uint overcap, 
+                                                         uint totalWeiBeforeContribution);
 
     /**
      * @dev Issues the combined bonus for every contribution made by the _beneficiary. Only after the ICO closes.
