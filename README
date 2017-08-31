@@ -1,7 +1,6 @@
 
 ## Overview
-A token with minimal complete ERC20 functionality. Comes in two versions, one accepts Ether on-chain, 
-one doesn't. Both deploy the token contract by themselves.
+A token with minimal complete ERC20 functionality. Comes in two versions, one accepts Ether on-chain, one doesn't. Both deploy the token contract and a vested wallet by themselves.
 
 ### contracts/Crowdsale.sol
 A crowdsale contract that:
