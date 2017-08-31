@@ -58,7 +58,7 @@ contract ARToken is StandardToken {
     require(totalSupply + _value > totalSupply); 
     require(mintingIsAllowed);
 
-    balances[_holder] += _value;
+    balances[_beneficiary] += _value;
     totalSupply += _value;
   }
 
