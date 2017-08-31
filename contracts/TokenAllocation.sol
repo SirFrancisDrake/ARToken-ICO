@@ -4,7 +4,7 @@ import './ARToken.sol';
 import './VestingWallet.sol';
 
    /**
-    * @dev A capped crowdsale with Fibonacci bonus structure and minting allowed by manager.
+    * @dev Prepaid token allocation for a capped crowdsale with Fibonacci bonus structure
     *      Written with OpenZeppelin sources as a rough reference.     
     *      Modern Token Team for the ICO of Cappasity's ARToken.
     */
