@@ -18,7 +18,7 @@ contract TokenAllocation {
     address public icoManager;
     
     // Events
-    event TokensAllocated(address _beneficiary, uint _contribution, string _currency, string _txHash);
+    event TokensAllocated(address _beneficiary, uint _tokensMinted, string _currency, string _txHash);
     event BonusIssued(address _beneficiary, uint _bonusTokensIssued);
     event FoundersAndPartnersTokensIssued(address _foundersWallet, uint _tokensForFounders, 
                                           address _partnersWallet, uint _tokensForPartners);
@@ -28,6 +28,7 @@ contract TokenAllocation {
     uint totalWeiGathered = 0;
     // Track how many wei we have processed into tokens. Need this to assign bonuses.
     uint totalWeiProcessed = 0;
+    uint lastPassedMilestone = 0;
     bool foundersAndPartnersTokensIssued = false;
     VestingWallet vestingWallet;
 
@@ -84,13 +85,12 @@ contract TokenAllocation {
         require( _contribution != 0);
         uint tokensToMint = _contribution * tokenRate;
         tokenContract.mint(_beneficiary, tokensToMint);
-        TokensAllocated(_beneficiary, _contribution, _currency, _txHash);
+        TokensAllocated(_beneficiary, tokensToMint, _currency, _txHash);
 
         // Calculating the total bonus to be issued.
         // 1. Count the bonus for the part of the contribution inside the current bonus tier
         // 2. If the contribution goes over the current milestone, iterate through 1 again
         uint remainingContribution = _contribution;
-        uint lastPassedMilestone = totalWeiProcessed / milestoneSize;
         uint totalBonus = 0;                                
         do {
             uint weiToFillCurrentMilestone = (lastPassedMilestone + 1) * milestoneSize - totalWeiGathered;

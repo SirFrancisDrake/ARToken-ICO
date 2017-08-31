@@ -10,13 +10,13 @@ contract ARToken is StandardToken {
   string public constant name = "ARToken";
   string public constant symbol = "ART";
   uint public constant decimals = 18;
-  uint constant TOKEN_LIMIT = 10 * 1e9 * 1e18;
+  uint public constant TOKEN_LIMIT = 10 * 1e9 * 1e18;
 
   // State variables
   // ===============
   address public manager;
 
-  // We block token transfers until ICO is finished.
+  // Block token transfers until ICO is finished.
   bool public tokensAreFrozen = true;
   bool public mintingIsAllowed = true;
 
@@ -26,7 +26,24 @@ contract ARToken is StandardToken {
     manager = _manager;
   }
 
-  // Priveleged functions
+  // ERC20 functions
+  // =========================
+  function transfer(address _to, uint _value) returns (bool success) {
+    require(!tokensAreFrozen);
+    super.transfer(_to, _value);
+  }
+
+  function transferFrom(address _from, address _to, uint _value) returns (bool success) {
+    require(!tokensAreFrozen);
+    super.transferFrom(_from, _to, _value);
+  }
+
+  function approve(address _spender, uint _value) returns (bool success) {
+    require(!tokensAreFrozen);
+    super.approve(_spender, _value);
+  }
+
+  // PRIVILEGED FUNCTIONS
   // ====================
   modifier onlyByManager() {
     require(msg.sender == manager);
@@ -34,7 +51,7 @@ contract ARToken is StandardToken {
   }
 
   // Mint some tokens and assign them to an address
-  function mint(address _holder, uint _value) onlyByManager external {
+  function mint(address _beneficiary, uint _value) onlyByManager external {
     require(_value != 0);
     require(totalSupply + _value <= TOKEN_LIMIT);
     // Making double sure uint doesn't overflow and wrap back
@@ -56,20 +73,4 @@ contract ARToken is StandardToken {
     tokensAreFrozen = false;
   }
 
-  // ERC20 functions
-  // =========================
-  function transfer(address _to, uint _value) returns (bool success) {
-    require(!tokensAreFrozen);
-    super.transfer(_to, _value);
-  }
-
-  function transferFrom(address _from, address _to, uint _value) returns (bool success) {
-    require(!tokensAreFrozen);
-    super.transferFrom(_from, _to, _value);
-  }
-
-  function approve(address _spender, uint _value) returns (bool success) {
-    require(!tokensAreFrozen);
-    super.approve(_spender, _value);
-  }
 }
