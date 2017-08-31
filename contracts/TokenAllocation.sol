@@ -94,15 +94,17 @@ contract TokenAllocation {
         uint totalBonus = 0;                                
         do {
             uint weiToFillCurrentMilestone = (lastPassedMilestone + 1) * milestoneSize - totalWeiGathered;
-            uint contributionChunk = min( weiToFillCurrentMilestone, _contribution );
+            uint contributionChunk = min( weiToFillCurrentMilestone, remainingContribution );
             totalWeiProcessed += contributionChunk;
             remainingContribution -= contributionChunk;
             totalBonus += calculateBonusForTier( contributionChunk, lastPassedMilestone );
-            if (contributionChunk >= weiToFillCurrentMilestone) lastPassedMilestone += 1;
+            if (contributionChunk == weiToFillCurrentMilestone) lastPassedMilestone += 1;
         } while (remainingContribution > 0);
 
-        if (totalBonus > 0) tokenContract.mint(_beneficiary, totalBonus);
-        BonusIssued(_beneficiary, totalBonus);
+        if (totalBonus > 0) {
+            tokenContract.mint(_beneficiary, totalBonus);
+            BonusIssued(_beneficiary, totalBonus);
+        }
     }
 
     /**
