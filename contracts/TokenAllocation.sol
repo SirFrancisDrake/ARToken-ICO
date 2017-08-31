@@ -12,7 +12,7 @@ import './VestingWallet.sol';
 contract TokenAllocation {
     // Token information
     uint constant tokenRate = 34996; // 1 ETH = 34996 ARTokens; so 1 wei = 34996 / 1e18 ARTokens
-    ARToken tokenContract;
+    ARToken public tokenContract;
     address foundersWallet; // A wallet permitted to request tokens from the time vault.
     address partnersWallet; // A wallet that distributes the tokens to early contributors.
     address public icoManager;
