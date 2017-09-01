@@ -69,7 +69,7 @@ contract ARToken is StandardToken {
 
   // Allow token transfer
   function unfreeze() onlyByManager external {
-    require(mintingIsAllowed = false);
+    require(!mintingIsAllowed);
     tokensAreFrozen = false;
   }
 
