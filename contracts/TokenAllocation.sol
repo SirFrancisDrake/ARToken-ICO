@@ -132,6 +132,8 @@ contract TokenAllocation {
         tokenContract.mint(vestingWallet, tokensForFounders);
         tokenContract.mint(partnersWallet, tokensForPartners);
         FoundersAndPartnersTokensIssued(vestingWallet, tokensForFounders, partnersWallet, tokensForPartners);
+        tokenContract.endMinting();
+        tokenContract.unfreeze();
     }
 
     // INTERNAL FUNCTIONS
