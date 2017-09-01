@@ -113,7 +113,7 @@ contract TokenAllocation {
     function rewardFoundersAndPartners() external onlyManager {
         require( !foundersAndPartnersTokensIssued );
 
-        // Calculating the total amount of tokens in the system, including not yet issued bonuses:
+        // Calculating the total amount of tokens in the system, including untracked bonuses:
         // 1. Total wei received * rate of tokens created per wei;
         // 2. For each milestone reached, a bonus on enough ether to fill a milestone entirely.
         // 3. If there's a tier that was reached but was not filled, it gets no bonuses.
