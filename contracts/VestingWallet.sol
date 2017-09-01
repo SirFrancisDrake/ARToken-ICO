@@ -37,6 +37,7 @@ contract VestingWallet {
                                                            uint _tokensRemaining, 
                                                            uint _nextPeriod) {
         require( now > nextPeriod );
+        require( periodsPassed < totalPeriods );
         uint tokensToRelease = 0;
         do {
             periodsPassed   += 1;
