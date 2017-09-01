@@ -121,6 +121,8 @@ contract Crowdsale is GenericCrowdsale {
         tokenContract.mint(vestingWallet, tokensForFounders);
         tokenContract.mint(partnersWallet, tokensForPartners);
         FoundersAndPartnersTokensIssued(vestingWallet, tokensForFounders, partnersWallet, tokensForPartners);
+        tokenContract.endMinting();
+        tokenContract.unfreeze();
     }
 
     // PRIVILEGED FUNCTIONS
