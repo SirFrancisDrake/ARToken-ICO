@@ -26,7 +26,6 @@ contract VestingWallet {
         foundersWallet  = _foundersWallet;
         tokenContract   = ERC20(_tokenContract);
         tokensRemaining = _totalTokens;
-        require( tokenContract.balanceOf(this) == tokensRemaining );
         nextPeriod      = now + cliffPeriod;
         tokensPerBatch  = _totalTokens / totalPeriods;
     }
