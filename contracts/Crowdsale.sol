@@ -74,7 +74,7 @@ contract Crowdsale is GenericCrowdsale {
     function buyTokens() public payable crowdsaleOpen returns (bool success) {
         require(msg.value >= 1e16); // only accepting contributions starting from 0.01 ETH
 
-        var (overcap, truncatedContribution) = calculateOvercap(msg.value);
+        var (truncatedContribution, overcap) = calculateOvercap(msg.value);
         uint tokensIssued = truncatedContribution * tokenRate;
 
         if (overcap > 0) (msg.sender).transfer(overcap);
@@ -177,14 +177,14 @@ contract Crowdsale is GenericCrowdsale {
         return true;
     }
 
-    function calculateOvercap(uint _contribution) constant internal returns (uint overcap, 
-                                                                             uint truncatedContribution) {
+    function calculateOvercap(uint _contribution) constant internal returns (uint truncatedContribution, 
+                                                                             uint overcap) {
         require( _contribution + totalWeiGathered > totalWeiGathered ); // Overflow protection just in case.
         if (_contribution + totalWeiGathered > hardCap) {
             overcap = _contribution + totalWeiGathered - hardCap;
             truncatedContribution = _contribution - overcap;
-            return (overcap, truncatedContribution);
-        } else return (0, _contribution);
+            return (truncatedContribution, overcap);
+        } else return (_contribution, 0);
     }
 
     function calculateBonusForTier(uint _contribution, uint _tier) constant internal returns (uint bonus) {
