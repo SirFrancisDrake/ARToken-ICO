@@ -171,7 +171,7 @@ contract Crowdsale is GenericCrowdsale {
 
         uint tokensToMint = _contribution * tokenRate;
 
-        tokenContract.mint(msg.sender, tokensToMint);
+        tokenContract.mint(_beneficiary, tokensToMint);
         totalWeiGathered += _contribution;
         recordTransaction(_beneficiary, _contribution);
         return true;
