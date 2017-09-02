@@ -184,7 +184,7 @@ contract Crowdsale is GenericCrowdsale {
             overcap = _contribution + totalWeiGathered - hardCap;
             truncatedContribution = _contribution - overcap;
             return (overcap, truncatedContribution);
-        } else return (0, 0);
+        } else return (0, _contribution);
     }
 
     function calculateBonusForTier(uint _contribution, uint _tier) constant internal returns (uint bonus) {
