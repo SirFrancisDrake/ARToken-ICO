@@ -14,13 +14,13 @@ import './VestingWallet.sol';
 contract Crowdsale is GenericCrowdsale {
     // Token information
     uint constant tokenRate = 34996; // 1 ETH = 34996 ARTokens; so 1 wei = 34996 / 1e18 ARTokens
-    ARToken tokenContract;
-    address foundersWallet; // A wallet permitted to request tokens from the time vault.
+    ARToken public tokenContract;
+    address public foundersWallet; // A wallet permitted to request tokens from the time vault.
     address partnersWallet; // A wallet that distributes the tokens to early contributors.
 
     // Crowdsale progress
-    uint constant hardCap = 175000 ether;
-    uint totalWeiGathered = 0;
+    uint constant public hardCap = 175000 ether;
+    uint public totalWeiGathered = 0;
     bool foundersAndPartnersTokensIssued = false;
     VestingWallet vestingWallet;
 
