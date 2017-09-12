@@ -36,14 +36,16 @@ contract Crowdsale is GenericCrowdsale {
      * @dev Constructs the crowdsale.
      * @param _startTime Timestamp when the crowdsale opens.
      * @param _endTime Timestamp when the crowdsale closes (unless the hard cap is reached earlier).
-     * @param _icoManager Wallet address that should be owned by the off-chain backend, from which \
+     * @param _icoBackend Wallet address that should be owned by the off-chain backend, from which \
      *          \ it mints the tokens for contributions accepted in other currencies.
+     * @param _icoManager An address that is allowed to pause and unpause the crowdsale.
      * @param _crowdsaleWallet A wallet where all the Ether from successful purchases is sent immediately.
      * @param _foundersWallet Where the founders' tokens to to after vesting.
      * @param _partnersWallet A wallet that distributes tokens to early contributors.
      */
     function Crowdsale(uint _startTime
                       , uint _endTime
+                      , address _icoBackend
                       , address _icoManager
                       , address _crowdsaleWallet
                       , address _foundersWallet
@@ -51,6 +53,7 @@ contract Crowdsale is GenericCrowdsale {
                       ) { 
         require(_startTime >= now);
         require(_endTime >= _startTime);
+        require(_icoBackend != 0x0);
         require(_icoManager != 0x0);
         require(_crowdsaleWallet != 0x0);
         require(_foundersWallet != 0x0);
@@ -60,6 +63,7 @@ contract Crowdsale is GenericCrowdsale {
 
         startTime = _startTime;
         endTime = _endTime;
+        icoBackend = _icoBackend;
         icoManager = _icoManager;
         crowdsaleWallet = _crowdsaleWallet;
         foundersWallet = _foundersWallet;
@@ -71,7 +75,7 @@ contract Crowdsale is GenericCrowdsale {
 
     // PUBLIC FUNCTIONS
     // ================
-    function buyTokens() public payable crowdsaleOpen returns (bool success) {
+    function buyTokens() public payable crowdsaleOpen crowdsaleNotPaused returns (bool success) {
         require(msg.value >= 1e16); // only accepting contributions starting from 0.01 ETH
 
         var (overcap, truncatedContribution) = calculateOvercap(msg.value);
@@ -88,7 +92,7 @@ contract Crowdsale is GenericCrowdsale {
      * @dev Mints the bonus tokens for a particular address, erasing the record.
      * @param _beneficiary The address for which the bonuses are issued.
      */
-    function issueBonus(address _beneficiary) external crowdsaleFinished {
+    function issueBonus(address _beneficiary) external crowdsaleFinished crowdsaleNotPaused {
         // Walk through the tier list, assign the bonus for each contribution.
         uint totalBonus = 0;
         for (uint i = 0; i<milestonesReached; i++) {
@@ -99,7 +103,7 @@ contract Crowdsale is GenericCrowdsale {
         BonusIssued(_beneficiary, totalBonus);
     }
 
-    function rewardFoundersAndPartners() external crowdsaleFinished {
+    function rewardFoundersAndPartners() external crowdsaleFinished crowdsaleNotPaused {
         require( !foundersAndPartnersTokensIssued );
 
         // Calculating the total amount of tokens in the system, including not yet issued bonuses:
@@ -130,9 +134,10 @@ contract Crowdsale is GenericCrowdsale {
     function offchainBuyTokens(address _beneficiary
                               , uint _contribution
                               , string _txHash) 
-                          external onlyManager crowdsaleOpen returns (bool success, 
-                                                                      uint overcap, 
-                                                                      uint totalWeiBeforeContribution) {
+                          external onlyBackend crowdsaleOpen crowdsaleNotPaused 
+                              returns ( bool success, 
+                                        uint overcap, 
+                                        uint totalWeiBeforeContribution ) {
         uint truncatedContribution;
         (truncatedContribution, overcap) = calculateOvercap(_contribution);
         totalWeiBeforeContribution = totalWeiGathered;
@@ -200,6 +205,11 @@ contract Crowdsale is GenericCrowdsale {
 
     modifier crowdsaleOpen() {
         require( (totalWeiGathered < hardCap) && (now > startTime) && (now < endTime) );
+        _;
+    }
+
+    modifier crowdsaleNotPaused() {
+        require( paused == false );
         _;
     }
 

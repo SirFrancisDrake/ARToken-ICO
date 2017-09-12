@@ -2,9 +2,11 @@
 pragma solidity ^0.4.15;
 
 contract GenericCrowdsale {
+    address public icoBackend;
     address public icoManager;
     uint startTime;
     uint endTime;
+    bool paused = false;
 
     // Wallet information
     address crowdsaleWallet; // Where the money goes to
@@ -32,6 +34,8 @@ contract GenericCrowdsale {
     event BonusIssued(address _beneficiary, uint _bonusTokensIssued);
     event FoundersAndPartnersTokensIssued(address foundersWallet, uint tokensForFounders, 
                                           address partnersWallet, uint tokensForPartners);
+    event Paused();
+    event Unpaused();
 
     // For contributors on Ethereum
     function buyTokens() public payable returns (bool success);
@@ -46,9 +50,25 @@ contract GenericCrowdsale {
     function offchainBuyTokens(address _beneficiary, 
                                uint _contribution, 
                                string _txHash) 
-                           onlyManager external returns (bool success, 
+                           onlyBackend external returns (bool success, 
                                                          uint overcap, 
                                                          uint totalWeiBeforeContribution);
+
+    /**
+     * @dev Pauses the crowdsale.
+     */
+    function pause() onlyManager external {
+        paused = true;
+        Paused();
+    }
+
+    /**
+     * @dev Unpauses the crowdsale.
+     */
+    function unpause() onlyManager external {
+        paused = false;
+        Unpaused();
+    }
 
     /**
      * @dev Issues the combined bonus for every contribution made by the _beneficiary. Only after the ICO closes.
@@ -65,6 +85,11 @@ contract GenericCrowdsale {
 
     modifier onlyManager() {
         require( msg.sender == icoManager );
+        _;
+    }
+
+    modifier onlyBackend() {
+        require( msg.sender == icoBackend );
         _;
     }
 }
