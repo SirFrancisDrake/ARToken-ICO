@@ -14,13 +14,13 @@ import './VestingWallet.sol';
 contract Crowdsale is GenericCrowdsale {
     // Token information
     uint constant tokenRate = 34996; // 1 ETH = 34996 ARTokens; so 1 wei = 34996 / 1e18 ARTokens
-    ARToken tokenContract;
-    address foundersWallet; // A wallet permitted to request tokens from the time vault.
+    ARToken public tokenContract;
+    address public foundersWallet; // A wallet permitted to request tokens from the time vault.
     address partnersWallet; // A wallet that distributes the tokens to early contributors.
 
     // Crowdsale progress
-    uint constant hardCap = 175000 ether;
-    uint totalWeiGathered = 0;
+    uint constant public hardCap = 175000 ether;
+    uint public totalWeiGathered = 0;
     bool foundersAndPartnersTokensIssued = false;
     VestingWallet vestingWallet;
 
@@ -78,7 +78,7 @@ contract Crowdsale is GenericCrowdsale {
     function buyTokens() public payable crowdsaleOpen crowdsaleNotPaused returns (bool success) {
         require(msg.value >= 1e16); // only accepting contributions starting from 0.01 ETH
 
-        var (overcap, truncatedContribution) = calculateOvercap(msg.value);
+        var (truncatedContribution, overcap) = calculateOvercap(msg.value);
         uint tokensIssued = truncatedContribution * tokenRate;
 
         if (overcap > 0) (msg.sender).transfer(overcap);
@@ -176,20 +176,19 @@ contract Crowdsale is GenericCrowdsale {
 
         uint tokensToMint = _contribution * tokenRate;
 
-        tokenContract.mint(msg.sender, tokensToMint);
-        totalWeiGathered += _contribution;
+        tokenContract.mint(_beneficiary, tokensToMint);
         recordTransaction(_beneficiary, _contribution);
         return true;
     }
 
-    function calculateOvercap(uint _contribution) constant internal returns (uint overcap, 
-                                                                             uint truncatedContribution) {
+    function calculateOvercap(uint _contribution) constant internal returns (uint truncatedContribution, 
+                                                                             uint overcap) {
         require( _contribution + totalWeiGathered > totalWeiGathered ); // Overflow protection just in case.
         if (_contribution + totalWeiGathered > hardCap) {
             overcap = _contribution + totalWeiGathered - hardCap;
             truncatedContribution = _contribution - overcap;
-            return (overcap, truncatedContribution);
-        } else return (0, 0);
+            return (truncatedContribution, overcap);
+        } else return (_contribution, 0);
     }
 
     function calculateBonusForTier(uint _contribution, uint _tier) constant internal returns (uint bonus) {
