@@ -5,7 +5,6 @@ import "./ERC20.sol";
 
   /**
    * @dev For the tokens issued for founders.
-   * Alexander Bokhenek (Modern Token Team) for the ICO of Cappasity's ARToken.
    */
 
 contract VestingWallet {
