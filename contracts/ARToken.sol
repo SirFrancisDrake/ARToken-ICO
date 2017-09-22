@@ -62,11 +62,12 @@ contract ARToken is StandardToken {
     totalSupply += _value;
   }
 
-  // Permanently disable minting, effectively burning remaining tokens
+  // Disable minting. Can be enabled later, but only once (see TokenAllocation.sol)
   function endMinting() onlyByManager external {
     mintingIsAllowed = false;
   }
-
+  
+  // Enable minting. See TokenAllocation.sol
   function startMinting() onlyByManager external {
     mintingIsAllowed = true;
   }
