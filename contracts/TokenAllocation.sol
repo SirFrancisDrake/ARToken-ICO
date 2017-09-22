@@ -1,69 +1,74 @@
 pragma solidity ^0.4.15;
 
 import './ARToken.sol';
+import './GenericCrowdsale.sol';
 import './VestingWallet.sol';
 
    /**
-    * @dev Prepaid token allocation for a capped crowdsale with Fibonacci bonus structure
+    * @dev Prepaid token allocation for a capped crowdsale with bonus structure sliding on sales
     *      Written with OpenZeppelin sources as a rough reference.     
     *      Modern Token Team for the ICO of Cappasity's ARToken.
     */
 
-contract TokenAllocation {
-    // Token information
-    uint constant tokenRate = 34996; // 1 ETH = 34996 ARTokens; so 1 wei = 34996 / 1e18 ARTokens
-    ARToken public tokenContract;
-    address foundersWallet; // A wallet permitted to request tokens from the time vault.
-    address partnersWallet; // A wallet that distributes the tokens to early contributors.
-    address public icoManager;
-    
+contract TokenAllocation is GenericCrowdsale {
     // Events
-    event TokensAllocated(address _beneficiary, uint _tokensMinted, string _currency, string _txHash);
+    event TokensAllocated(address _beneficiary, uint _contribution, string _currency, string _txHash);
     event BonusIssued(address _beneficiary, uint _bonusTokensIssued);
     event FoundersAndPartnersTokensIssued(address _foundersWallet, uint _tokensForFounders, 
                                           address _partnersWallet, uint _tokensForPartners);
+
+    // Token information
+    uint constant tokenRate = 125; // 1 USD = 125 ARTokens; so 1 cent = 1.25 ARTokens \
+                                   // assuming ARToken has 2 decimals (as set in token contract)
+    ARToken public tokenContract;
+    address foundersWallet; // A wallet permitted to request tokens from the time vaults.
+    address partnersWallet; // A wallet that distributes the tokens to early contributors.
+    address public icoManager;
+    address public icoBackend;
     
     // Crowdsale progress
-    uint constant hardCap = 175000 ether;
-    uint totalWeiGathered = 0;
-    // Track how many wei we have processed into tokens. Need this to assign bonuses.
-    uint totalWeiProcessed = 0;
-    uint lastPassedMilestone = 0;
-    bool foundersAndPartnersTokensIssued = false;
-    VestingWallet vestingWallet;
+    uint constant hardCap     = 5 * 1e7 * 1e2; // 50 000 000 dollars * 100 cents per dollar
+    uint constant phaseOneCap = 3 * 1e7 * 1e2; // 30 000 000 dollars * 100 cents per dollar
+    uint public totalCentsGathered = 0;
+    uint public centsInPhaseOne = 0;
+    uint public totalTokenSupply = 0;     // Counting the bonuses, not counting the founders' share.
+    uint public tokensDuringPhaseOne = 0; // This is to track the founders' share in between the phases
+    VestingWallet public vestingWalletPhaseOne;
+    VestingWallet public vestingWalletPhaseTwo;
 
-    // Tracking the bonuses
-    uint milestonesReached = 0; // each milestone corresponds to 17500 ETH
-    uint constant milestoneSize = 17500 ether;
-    // Bonus staircase, a reversed Fibonacci sequence starting with 55
-    uint8[10] fibonacci = [55, 34, 21, 13, 8, 5, 3, 2, 1, 1]; 
+    enum CrowdsalePhase { PhaseOne, Paused, PhaseTwo, Finished }
+    enum BonusPhase { TenPercent, FivePercent, None }
+
+    uint public constant bonusTierSize = 1 * 1e7 * 1e2; // 10 000 000 dollars * 100 cents per dollar
+    uint public constant bigContributionBound  = 1 * 1e5 * 1e2; // 100 000 dollars * 100 cents per dollar 
+    uint public constant hugeContributionBound = 3 * 1e5 * 1e2; // 300 000 dollars * 100 cents per dollar 
+    CrowdsalePhase public crowdsalePhase = CrowdsalePhase.PhaseOne;
+    BonusPhase public bonusPhase = BonusPhase.TenPercent;
 
     /**
      * @dev Constructs the allocator.
-     * @param _icoManager Wallet address that should be owned by the off-chain backend, from which \
+     * @param _icoBackend Wallet address that should be owned by the off-chain backend, from which \
      *          \ it mints the tokens for contributions accepted in other currencies.
+     * @param _icoManager Allowed to start phase 2.
      * @param _foundersWallet Where the founders' tokens to to after vesting.
      * @param _partnersWallet A wallet that distributes tokens to early contributors.
-     * @param _totalWeiGathered How much money was collected during the crowdsale.
      */
     function TokenAllocation(address _icoManager, 
+                             address _icoBackend,
                              address _foundersWallet,
-                             address _partnersWallet, 
-                             uint _totalWeiGathered
+                             address _partnersWallet 
                              ) { 
         require(_icoManager != 0x0);
+        require(_icoBackend != 0x0);
         require(_foundersWallet != 0x0);
         require(_partnersWallet != 0x0);
-        require(_totalWeiGathered != 0);
         
         tokenContract = new ARToken(address(this));
 
         icoManager       = _icoManager;
+        icoBackend       = _icoBackend;
         foundersWallet   = _foundersWallet;
         partnersWallet   = _partnersWallet;
-        totalWeiGathered = _totalWeiGathered;
-
-        milestonesReached = totalWeiGathered / milestoneSize;
     }
 
     // PRIVILEGED FUNCTIONS
@@ -72,85 +77,148 @@ contract TokenAllocation {
      * @dev Issues tokens for a particular address as for a contribution of size _contribution, \
      *          \ then issues bonuses in proportion. Currency and txHash passed for tracking.
      * @param _beneficiary Receiver of the tokens.
-     * @param _contribution Size of the contribution (in wei).
+     * @param _contribution Size of the contribution (in USD cents).
      * @param _currency Ticker of the currency that this contribution was made in.
      * @param _txHash Hash of the received transaction in whatever currency was accepted.
      */ 
     function issueTokens(address _beneficiary, uint _contribution, 
-                         string _currency, string _txHash) external onlyManager {
-        // Cannot issue new tokens after founders and partners have been rewarded
-        require( !foundersAndPartnersTokensIssued );
-        // Make sure that the total sum of the received funding is recorded, so we can calculate the bonus
-        require( totalWeiGathered != 0);
-        require( _contribution != 0);
-        uint tokensToMint = _contribution * tokenRate;
-        tokenContract.mint(_beneficiary, tokensToMint);
-        TokensAllocated(_beneficiary, tokensToMint, _currency, _txHash);
+                         string _currency, string _txHash) external onlyBackend onlyValidPhase {
 
-        // Calculating the total bonus to be issued.
-        // 1. Count the bonus for the part of the contribution inside the current bonus tier
-        // 2. If the contribution goes over the current milestone, iterate through 1 again
+        require( totalCentsGathered + _contribution <= hardCap );
+        if (crowdsalePhase == CrowdsalePhase.PhaseOne)
+            require( totalCentsGathered + _contribution <= phaseOneCap );
+
+        uint centsLeftInPhase;
         uint remainingContribution = _contribution;
-        uint totalBonus = 0;                                
-        do {
-            uint weiToFillCurrentMilestone = (lastPassedMilestone + 1) * milestoneSize - totalWeiGathered;
-            uint contributionChunk = min( weiToFillCurrentMilestone, remainingContribution );
-            totalWeiProcessed += contributionChunk;
-            remainingContribution -= contributionChunk;
-            totalBonus += calculateBonusForTier( contributionChunk, lastPassedMilestone );
-            if (contributionChunk == weiToFillCurrentMilestone) lastPassedMilestone += 1;
-        } while (remainingContribution > 0);
+        uint contributionPart;
+        uint tokensToMint;
+        uint bonus;
 
-        if (totalBonus > 0) {
-            tokenContract.mint(_beneficiary, totalBonus);
-            BonusIssued(_beneficiary, totalBonus);
-        }
+        // Check if the contribution fills the current bonus phase. If so, break it up in parts,
+        // mint tokens for each part separately, assign bonuses, trigger events. For transparency.
+        do {
+            centsLeftInPhase = ((totalCentsGathered - centsInPhaseOne) / bonusTierSize + 1) * bonusTierSize - 
+                                                                        (totalCentsGathered - centsInPhaseOne);
+            contributionPart = min(centsLeftInPhase, remainingContribution);
+            tokensToMint = tokenRate * contributionPart;
+            tokenContract.mint(_beneficiary, tokensToMint);
+            TokensAllocated(_beneficiary, tokensToMint, _currency, _txHash);
+
+            bonus = calculateBonus(contributionPart);
+            if (bonus>0) tokenContract.mint(_beneficiary, calculateBonus(contributionPart));
+            BonusIssued(_beneficiary, bonus);
+            remainingContribution -= contributionPart;
+            if (remainingContribution > 0) advanceBonusPhase();
+
+            totalCentsGathered += _contribution;
+            totalTokenSupply += tokensToMint + bonus;
+            if (crowdsalePhase == CrowdsalePhase.PhaseOne) {
+                tokensDuringPhaseOne += tokensToMint + bonus;
+                centsInPhaseOne += contributionPart;
+            }
+        } while (remainingContribution > 0);
     }
 
     /**
-     * @dev Issues tokens for founders and partners.
+     * @dev Issue tokens for founders and partners, end the current phase.
      */
-    function rewardFoundersAndPartners() external onlyManager {
-        require( !foundersAndPartnersTokensIssued );
+    function rewardFoundersAndPartners() external onlyBackend {
+        require( crowdsalePhase == CrowdsalePhase.PhaseOne || crowdsalePhase == CrowdsalePhase.PhaseTwo );  
 
-        // Calculating the total amount of tokens in the system, including untracked bonuses:
-        // 1. Total wei received * rate of tokens created per wei;
-        // 2. For each milestone reached, a bonus on enough ether to fill a milestone entirely.
-        // 3. If there's a tier that was reached but was not filled, it gets no bonuses.
-        uint totalTokenSupply = totalWeiGathered * tokenRate;
-        for (uint i = 0; i<milestonesReached; i++)
-            totalTokenSupply += calculateBonusForTier(milestoneSize, i);
+        uint tokensDuringThisPhase;
+        if ( crowdsalePhase == CrowdsalePhase.PhaseOne ) tokensDuringThisPhase = totalTokenSupply;
+        else tokensDuringThisPhase = totalTokenSupply - tokensDuringPhaseOne;
 
-        uint tokensForFounders = totalTokenSupply * 18 / 100;
-        uint tokensForPartners = totalTokenSupply * 12 / 100;
+        // Total tokens sold is 70% of the overall supply, founders' share is 18%, early contributors' is 12%
+        // So to obtain those from tokens sold, multiply them by 0.18 / 0.7 and 0.12 / 0.7 respectively.
+        uint tokensForFounders = tokensDuringThisPhase * 257 / 1000; // 0.257 of 0.7 is 0.18 of 1
+        uint tokensForPartners = tokensDuringThisPhase * 171 / 1000; // 0.171 of 0.7 is 0.12 of 1
 
-        foundersAndPartnersTokensIssued = true;
-
-        vestingWallet = new VestingWallet(foundersWallet, 
-                                          address(tokenContract), 
-                                          tokensForFounders);
-        tokenContract.mint(vestingWallet, tokensForFounders);
         tokenContract.mint(partnersWallet, tokensForPartners);
-        FoundersAndPartnersTokensIssued(vestingWallet, tokensForFounders, partnersWallet, tokensForPartners);
-        tokenContract.endMinting();
-        tokenContract.unfreeze();
+
+        if ( crowdsalePhase == CrowdsalePhase.PhaseOne ) {
+            vestingWalletPhaseOne = new VestingWallet(foundersWallet, 
+                                                      address(tokenContract), 
+                                                      tokensForFounders);
+            tokenContract.mint(vestingWalletPhaseOne, tokensForFounders);
+            FoundersAndPartnersTokensIssued(vestingWalletPhaseOne, tokensForFounders, 
+                                            partnersWallet, tokensForPartners);
+        } else if ( crowdsalePhase == CrowdsalePhase.PhaseTwo ) {
+            vestingWalletPhaseTwo = new VestingWallet(foundersWallet, 
+                                                      address(tokenContract), 
+                                                      tokensForFounders);
+            tokenContract.mint(vestingWalletPhaseTwo, tokensForFounders);
+            FoundersAndPartnersTokensIssued(vestingWalletPhaseTwo, tokensForFounders, 
+                                            partnersWallet, tokensForPartners);
+        }
+    }
+
+
+    /**
+     * @dev Start the second phase of token allocation. Can only be called by the crowdsale manager.
+     */
+    function beginPhaseTwo() external onlyManager {
+        require( crowdsalePhase == CrowdsalePhase.Paused );
+        crowdsalePhase = CrowdsalePhase.PhaseTwo;
+        bonusPhase = BonusPhase.TenPercent;
+        tokenContract.startMinting();
     }
 
     // INTERNAL FUNCTIONS
     // ====================
-    function calculateBonusForTier(uint _contribution, uint _tier) constant internal returns (uint bonus) {
-        // For each failed funding milestone, the descending bonus staircase loses a step from the left.
-        // Thus to calculate the bonus, offset the sequence by 10 - (total milestones reached)
-        return ( _contribution * fibonacci[10 - milestonesReached + _tier] / 100 );
+    function calculateBonus(uint _contribution) constant internal returns (uint bonusTokens) {
+        // All bonuses are additive and not multiplicative
+        // Calculate bonus on contribution size, then convert it to bonus tokens.
+        uint bonus = 0;
+        // Contribution size bonuses
+        if (crowdsalePhase == CrowdsalePhase.PhaseOne) {
+            // 5% for contributions above bigContributionBound
+            if (_contribution >= bigContributionBound)  bonus += _contribution * 5 / 100;
+            // additional 5% for contributions above hugeContributionBound, 10% total
+            if (_contribution >= hugeContributionBound) bonus += _contribution * 5 / 100;
+        }
+
+        // Bonus tier bonuses. We make sure in issueTokens that the processed contribution \
+        // falls entirely into one tier
+
+        if (bonusPhase == BonusPhase.TenPercent) bonus += _contribution / 10;
+        else if (bonusPhase == BonusPhase.FivePercent) bonus += _contribution * 5 / 100;
+
+        bonusTokens = bonus * tokenRate;
+
+        return bonusTokens;
+    }
+
+    /**
+     * @dev Advance the bonus phase to next tier when appropriate, do nothing otherwise.
+     */
+    function advanceBonusPhase() internal onlyValidPhase () {
+        if (crowdsalePhase == CrowdsalePhase.PhaseOne) {
+            if (bonusPhase == BonusPhase.TenPercent) bonusPhase = BonusPhase.FivePercent;
+            else if (bonusPhase == BonusPhase.FivePercent) bonusPhase = BonusPhase.None;
+        }
+        else if (bonusPhase == BonusPhase.TenPercent)
+            bonusPhase = BonusPhase.None;
     }
 
     function min(uint _a, uint _b) constant internal returns (uint result) {
         if (_a < _b) return _a;
         else return _b;
     }
+
+    modifier onlyValidPhase() {
+        require( crowdsalePhase == CrowdsalePhase.PhaseOne 
+                 || crowdsalePhase == CrowdsalePhase.PhaseTwo );
+        _;
+    }
     
     modifier onlyManager() {
         require( msg.sender == icoManager );
+        _;
+    }
+
+    modifier onlyBackend() {
+        require( msg.sender == icoBackend );
         _;
     }
 }

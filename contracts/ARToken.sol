@@ -9,8 +9,8 @@ contract ARToken is StandardToken {
   // =========
   string public constant name = "ARToken";
   string public constant symbol = "ART";
-  uint public constant decimals = 18;
-  uint public constant TOKEN_LIMIT = 10 * 1e9 * 1e18;
+  uint public constant decimals = 2;
+  uint public constant TOKEN_LIMIT = 10 * 1e9 * 1e2; // 10 billion tokens, 2 decimals
 
   // State variables
   // ===============
@@ -67,10 +67,12 @@ contract ARToken is StandardToken {
     mintingIsAllowed = false;
   }
 
-  // Allow token transfer
-  function unfreeze() onlyByManager external {
-    require(!mintingIsAllowed);
-    tokensAreFrozen = false;
+  function startMinting() onlyByManager external {
+    mintingIsAllowed = true;
   }
 
+  // Allow token transfer
+  function unfreeze() onlyByManager external {
+    tokensAreFrozen = false;
+  }
 }
