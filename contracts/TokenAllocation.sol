@@ -30,9 +30,13 @@ contract TokenAllocation is GenericCrowdsale {
     uint constant hardCap     = 5 * 1e7 * 1e2; // 50 000 000 dollars * 100 cents per dollar
     uint constant phaseOneCap = 3 * 1e7 * 1e2; // 30 000 000 dollars * 100 cents per dollar
     uint public totalCentsGathered = 0;
+    // Total sum gathered in phase one, need this to adjust the bonus tiers in phase two.
+    // Updated only once, when the phase one is concluded.
     uint public centsInPhaseOne = 0;
     uint public totalTokenSupply = 0;     // Counting the bonuses, not counting the founders' share.
-    uint public tokensDuringPhaseOne = 0; // This is to track the founders' share in between the phases
+    // Total tokens issued in phase one, including bonuses. Need this to correctly calculate the founders' \
+    // share and issue it in parts, once after each round. Updated when issuing tokens.
+    uint public tokensDuringPhaseOne = 0;
     VestingWallet public vestingWalletPhaseOne;
     VestingWallet public vestingWalletPhaseTwo;
 
@@ -82,7 +86,7 @@ contract TokenAllocation is GenericCrowdsale {
      * @param _txHash Hash of the received transaction in whatever currency was accepted.
      */ 
     function issueTokens(address _beneficiary, uint _contribution, 
-                         string _currency, string _txHash) external onlyBackend onlyValidPhase {
+                         string _currency, string _txHash) external onlyBackend onlyValidPhase onlyUnpaused {
 
         require( totalCentsGathered + _contribution <= hardCap );
         if (crowdsalePhase == CrowdsalePhase.PhaseOne)
@@ -94,27 +98,29 @@ contract TokenAllocation is GenericCrowdsale {
         uint tokensToMint;
         uint bonus;
 
+        totalCentsGathered += _contribution;
+
         // Check if the contribution fills the current bonus phase. If so, break it up in parts,
         // mint tokens for each part separately, assign bonuses, trigger events. For transparency.
         do {
-            centsLeftInPhase = ((totalCentsGathered - centsInPhaseOne) / bonusTierSize + 1) * bonusTierSize - 
-                                                                        (totalCentsGathered - centsInPhaseOne);
-            contributionPart = min(centsLeftInPhase, remainingContribution);
+            if (bonusPhase != BonusPhase.None) {
+                centsLeftInPhase = ((totalCentsGathered - centsInPhaseOne) / bonusTierSize + 1) * bonusTierSize - 
+                                                                            (totalCentsGathered - centsInPhaseOne);
+                contributionPart = min(centsLeftInPhase, remainingContribution);
+            } else contributionPart = remainingContribution;
             tokensToMint = tokenRate * contributionPart;
             tokenContract.mint(_beneficiary, tokensToMint);
             TokensAllocated(_beneficiary, tokensToMint, _currency, _txHash);
 
             bonus = calculateBonus(contributionPart);
-            if (bonus>0) tokenContract.mint(_beneficiary, calculateBonus(contributionPart));
+            if (bonus>0) tokenContract.mint(_beneficiary, bonus);
             BonusIssued(_beneficiary, bonus);
             remainingContribution -= contributionPart;
             if (remainingContribution > 0) advanceBonusPhase();
 
-            totalCentsGathered += _contribution;
             totalTokenSupply += tokensToMint + bonus;
             if (crowdsalePhase == CrowdsalePhase.PhaseOne) {
                 tokensDuringPhaseOne += tokensToMint + bonus;
-                centsInPhaseOne += contributionPart;
             }
         } while (remainingContribution > 0);
     }
@@ -122,7 +128,7 @@ contract TokenAllocation is GenericCrowdsale {
     /**
      * @dev Issue tokens for founders and partners, end the current phase.
      */
-    function rewardFoundersAndPartners() external onlyBackend {
+    function rewardFoundersAndPartners() external onlyBackend onlyUnpaused {
         require( crowdsalePhase == CrowdsalePhase.PhaseOne || crowdsalePhase == CrowdsalePhase.PhaseTwo );  
 
         uint tokensDuringThisPhase;
