@@ -77,4 +77,8 @@ contract GenericCrowdsale {
         require( msg.sender == icoBackend );
         _;
     }
+
+    modifier onlyUnpaused() {
+        require( paused == false );
+        _;
 }
