@@ -1,18 +1,10 @@
 
 ## Overview
-A token with minimal complete ERC20 functionality. Comes in two versions, one accepts Ether on-chain, one doesn't. Both deploy the token contract and a vested wallet by themselves.
-
-### contracts/Crowdsale.sol
-A crowdsale contract that:
-1. Accepts direct purchases for ETH;
-2. Allows the off-chain backend to mint tokens;
-3. Assigns Fibonacci bonuses.
-4. Sends 18% of total token supply to a vested wallet (24 months vesting with 30 days cliff),
-12% to a given address for backend allocation to early contributors.
+A token with minimal complete ERC20 functionality.
 
 ### contracts/TokenAllocation.sol
 A crowdsale contract that:
 1. Allows the off-chain backend to mint tokens;
-2. Assigns Fibonacci bonuses.
+2. Assigns bonuses sliding on sales;
 3. Sends 18% of total token supply to a vested wallet (24 months vesting with 30 days cliff),
 12% to a given address for backend allocation to early contributors.
