@@ -132,7 +132,7 @@ contract TokenAllocation is GenericCrowdsale {
         require( crowdsalePhase == CrowdsalePhase.PhaseOne || crowdsalePhase == CrowdsalePhase.PhaseTwo );  
 
         uint tokensDuringThisPhase;
-        if ( crowdsalePhase == CrowdsalePhase.PhaseOne ) tokensDuringThisPhase = totalTokenSupply;
+        if (crowdsalePhase == CrowdsalePhase.PhaseOne) tokensDuringThisPhase = totalTokenSupply;
         else tokensDuringThisPhase = totalTokenSupply - tokensDuringPhaseOne;
 
         // Total tokens sold is 70% of the overall supply, founders' share is 18%, early contributors' is 12%
@@ -142,14 +142,14 @@ contract TokenAllocation is GenericCrowdsale {
 
         tokenContract.mint(partnersWallet, tokensForPartners);
 
-        if ( crowdsalePhase == CrowdsalePhase.PhaseOne ) {
+        if (crowdsalePhase == CrowdsalePhase.PhaseOne) {
             vestingWalletPhaseOne = new VestingWallet(foundersWallet, 
                                                       address(tokenContract), 
                                                       tokensForFounders);
             tokenContract.mint(vestingWalletPhaseOne, tokensForFounders);
             FoundersAndPartnersTokensIssued(vestingWalletPhaseOne, tokensForFounders, 
                                             partnersWallet, tokensForPartners);
-        } else if ( crowdsalePhase == CrowdsalePhase.PhaseTwo ) {
+        } else if (crowdsalePhase == CrowdsalePhase.PhaseTwo) {
             vestingWalletPhaseTwo = new VestingWallet(foundersWallet, 
                                                       address(tokenContract), 
                                                       tokensForFounders);
@@ -157,7 +157,14 @@ contract TokenAllocation is GenericCrowdsale {
             FoundersAndPartnersTokensIssued(vestingWalletPhaseTwo, tokensForFounders, 
                                             partnersWallet, tokensForPartners);
         }
-    }
+        
+      // Store the total sum collected during phase one for calculations in phase two. Enable token transfer.   
+      if (crowdsalePhase == CrowdsalePhase.PhaseOne) {
+         centsInPhaseOne = totalCentsGathered;
+         tokenContract.unfreeze();
+      }
+      tokenContract.endMinting();
+   }
 
 
     /**
@@ -198,7 +205,7 @@ contract TokenAllocation is GenericCrowdsale {
     /**
      * @dev Advance the bonus phase to next tier when appropriate, do nothing otherwise.
      */
-    function advanceBonusPhase() internal onlyValidPhase () {
+    function advanceBonusPhase() internal onlyValidPhase {
         if (crowdsalePhase == CrowdsalePhase.PhaseOne) {
             if (bonusPhase == BonusPhase.TenPercent) bonusPhase = BonusPhase.FivePercent;
             else if (bonusPhase == BonusPhase.FivePercent) bonusPhase = BonusPhase.None;
