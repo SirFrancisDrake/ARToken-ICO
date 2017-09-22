@@ -7,14 +7,14 @@ contract GenericCrowdsale {
     bool paused = false;
 
     /**
-     * @dev Confirms token issuance for a token purchase that happened off-chain was processed successfully.
+     * @dev Confirms that token issuance for an off-chain purchase was processed successfully.
      * @param _beneficiary Token holder.
      * @param _contribution Money received (in USD cents).
      * @param _txHash Transaction hash from the medium where the money was received.
      * @param _tokensIssued The amount of tokens that was assigned to the holder, not counting bonuses.
      */
     event OffchainTokenPurchase(address _beneficiary, uint _contribution, string _txHash, 
-                                uint _tokensIssued, uint _overcap, uint totalWeiBeforeContribution);
+                                uint _tokensIssued);
     /**
      * @dev Notifies about bonus token issuance. Is raised even if the bonus is 0.
      * @param _beneficiary Token holder.
@@ -43,9 +43,7 @@ contract GenericCrowdsale {
     function offchainBuyTokens(address _beneficiary, 
                                uint _contribution, 
                                string _txHash) 
-                           onlyBackend external returns (bool success, 
-                                                         uint overcap, 
-                                                         uint totalWeiBeforeContribution);
+                           onlyBackend external returns (bool success);
 
     /**
      * @dev Pauses the crowdsale.
