@@ -166,7 +166,6 @@ contract TokenAllocation is GenericCrowdsale {
       tokenContract.endMinting();
    }
 
-
     /**
      * @dev Start the second phase of token allocation. Can only be called by the crowdsale manager.
      */
