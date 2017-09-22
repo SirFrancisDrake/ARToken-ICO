@@ -81,4 +81,5 @@ contract GenericCrowdsale {
     modifier onlyUnpaused() {
         require( paused == false );
         _;
+    }
 }
