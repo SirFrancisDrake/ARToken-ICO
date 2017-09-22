@@ -87,7 +87,6 @@ contract TokenAllocation is GenericCrowdsale {
      */ 
     function issueTokens(address _beneficiary, uint _contribution, 
                          string _currency, string _txHash) external onlyBackend onlyValidPhase onlyUnpaused {
-
         require( totalCentsGathered + _contribution <= hardCap );
         if (crowdsalePhase == CrowdsalePhase.PhaseOne)
             require( totalCentsGathered + _contribution <= phaseOneCap );
@@ -128,9 +127,7 @@ contract TokenAllocation is GenericCrowdsale {
     /**
      * @dev Issue tokens for founders and partners, end the current phase.
      */
-    function rewardFoundersAndPartners() external onlyBackend onlyUnpaused {
-        require( crowdsalePhase == CrowdsalePhase.PhaseOne || crowdsalePhase == CrowdsalePhase.PhaseTwo );  
-
+    function rewardFoundersAndPartners() external onlyBackend onlyValidPhase onlyUnpaused {
         uint tokensDuringThisPhase;
         if (crowdsalePhase == CrowdsalePhase.PhaseOne) tokensDuringThisPhase = totalTokenSupply;
         else tokensDuringThisPhase = totalTokenSupply - tokensDuringPhaseOne;
