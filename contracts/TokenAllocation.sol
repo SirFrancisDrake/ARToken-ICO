@@ -115,8 +115,9 @@ contract TokenAllocation is GenericCrowdsale {
             bonus = calculateBonus(contributionPart);
             if (bonus>0) tokenContract.mint(_beneficiary, bonus);
             BonusIssued(_beneficiary, bonus);
+            if ((bonusPhase != BonusPhase.None) && (centsLeftInPhase == contributionPart))
+                advanceBonusPhase();
             remainingContribution -= contributionPart;
-            if (remainingContribution > 0) advanceBonusPhase();
 
             totalTokenSupply += tokensToMint + bonus;
             if (crowdsalePhase == CrowdsalePhase.PhaseOne) {
