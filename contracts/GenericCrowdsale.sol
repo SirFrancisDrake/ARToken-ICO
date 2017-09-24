@@ -40,10 +40,8 @@ contract GenericCrowdsale {
      * @param _contribution The Ether equivalent (in wei) of the contribution received off-chain.
      * @param _txHash Transaction hash from the chain where the contribution was received.
      */
-    function issueTokens(address _beneficiary, 
-                         uint _contribution, 
-                         string _txHash) 
-                     onlyBackend external returns (bool success);
+    function issueTokens(address _beneficiary, uint _contribution, 
+                         string _currency, string _txHash) onlyBackend onlyUnpaused external;
 
     /**
      * @dev Pauses the crowdsale.
@@ -66,7 +64,7 @@ contract GenericCrowdsale {
      *        of the crowdsale, respectively, including all the token bonuses on early contributions. Can only be
      *        called after the end of the crowdsale phase, ends the current phase.
      */
-    function rewardFoundersAndPartners() external;
+    function rewardFoundersAndPartners() onlyBackend onlyUnpaused external;
 
     modifier onlyManager() {
         require( msg.sender == icoManager );

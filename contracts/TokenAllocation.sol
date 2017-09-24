@@ -159,7 +159,8 @@ contract TokenAllocation is GenericCrowdsale {
       if (crowdsalePhase == CrowdsalePhase.PhaseOne) {
          centsInPhaseOne = totalCentsGathered;
          tokenContract.unfreeze();
-      }
+         crowdsalePhase = CrowdsalePhase.Paused;
+      } else crowdsalePhase = CrowdsalePhase.Finished;
       tokenContract.endMinting();
    }
 
