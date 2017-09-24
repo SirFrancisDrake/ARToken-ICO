@@ -13,8 +13,8 @@ contract GenericCrowdsale {
      * @param _txHash Transaction hash from the medium where the money was received.
      * @param _tokensIssued The amount of tokens that was assigned to the holder, not counting bonuses.
      */
-    event OffchainTokenPurchase(address _beneficiary, uint _contribution, string _txHash, 
-                                uint _tokensIssued);
+    event TokensAllocated(address _beneficiary, uint _contribution, string _txHash, 
+                          uint _tokensIssued);
     /**
      * @dev Notifies about bonus token issuance. Is raised even if the bonus is 0.
      * @param _beneficiary Token holder.
@@ -40,10 +40,10 @@ contract GenericCrowdsale {
      * @param _contribution The Ether equivalent (in wei) of the contribution received off-chain.
      * @param _txHash Transaction hash from the chain where the contribution was received.
      */
-    function offchainBuyTokens(address _beneficiary, 
-                               uint _contribution, 
-                               string _txHash) 
-                           onlyBackend external returns (bool success);
+    function issueTokens(address _beneficiary, 
+                         uint _contribution, 
+                         string _txHash) 
+                     onlyBackend external returns (bool success);
 
     /**
      * @dev Pauses the crowdsale.
