@@ -12,7 +12,8 @@ import './VestingWallet.sol';
 
 contract TokenAllocation is GenericCrowdsale {
     // Events
-    event TokensAllocated(address _beneficiary, uint _contribution, string _currency, string _txHash);
+    event TokensAllocated(address _beneficiary, uint _contribution, string _currency, string _txHash,
+                          uint _tokensIssued);
     event BonusIssued(address _beneficiary, uint _bonusTokensIssued);
     event FoundersAndPartnersTokensIssued(address _foundersWallet, uint _tokensForFounders, 
                                           address _partnersWallet, uint _tokensForPartners);
@@ -109,7 +110,7 @@ contract TokenAllocation is GenericCrowdsale {
             } else contributionPart = remainingContribution;
             tokensToMint = tokenRate * contributionPart;
             tokenContract.mint(_beneficiary, tokensToMint);
-            TokensAllocated(_beneficiary, tokensToMint, _currency, _txHash);
+            TokensAllocated(_beneficiary, contributionPart, _currency, _txHash, tokensToMint);
 
             bonus = calculateBonus(contributionPart);
             if (bonus>0) tokenContract.mint(_beneficiary, bonus);

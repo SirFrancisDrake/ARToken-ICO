@@ -9,11 +9,12 @@ contract GenericCrowdsale {
     /**
      * @dev Confirms that token issuance for an off-chain purchase was processed successfully.
      * @param _beneficiary Token holder.
-     * @param _contribution Money received (in USD cents).
-     * @param _txHash Transaction hash from the medium where the money was received.
+     * @param _contribution Money received (in USD cents). Copied from issueTokens call arguments.
+     * @param _currency Currency the contribution was received in. Copied from issueTokens call arguments.
+     * @param _txHash Transaction hash from the medium where the money was received. Copied from issueTokens.
      * @param _tokensIssued The amount of tokens that was assigned to the holder, not counting bonuses.
      */
-    event TokensAllocated(address _beneficiary, uint _contribution, string _txHash, 
+    event TokensAllocated(address _beneficiary, uint _contribution, string _currency, string _txHash, 
                           uint _tokensIssued);
     /**
      * @dev Notifies about bonus token issuance. Is raised even if the bonus is 0.
