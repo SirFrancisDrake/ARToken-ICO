@@ -187,7 +187,6 @@ contract TokenAllocation is GenericCrowdsale {
         tokenRate = _tokenRate;
     }
 
-
     // INTERNAL FUNCTIONS
     // ====================
     function calculateBonus(uint _contribution) constant internal returns (uint bonusTokens) {
