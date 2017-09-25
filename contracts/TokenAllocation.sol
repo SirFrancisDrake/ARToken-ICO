@@ -19,7 +19,7 @@ contract TokenAllocation is GenericCrowdsale {
                                           address _partnersWallet, uint _tokensForPartners);
 
     // Token information
-    uint constant tokenRate = 125; // 1 USD = 125 ARTokens; so 1 cent = 1.25 ARTokens \
+    uint public tokenRate = 125; // 1 USD = 125 ARTokens; so 1 cent = 1.25 ARTokens \
                                    // assuming ARToken has 2 decimals (as set in token contract)
     ARToken public tokenContract;
     address foundersWallet; // A wallet permitted to request tokens from the time vaults.
@@ -175,6 +175,18 @@ contract TokenAllocation is GenericCrowdsale {
         bonusPhase = BonusPhase.TenPercent;
         tokenContract.startMinting();
     }
+
+    /**
+     * @dev Set the ART / 1 USD rate. Can only be called by the crowdsale manager in between the phases.
+     * _tokenRate How many ART per 1 USD cent. As dollars, ART has two decimals.
+     *            For instance: tokenRate = 125 means "1.25 ART per USD cent" <=> "125 ART per USD".
+     */
+    function setRateForPhaseTwo(uint _tokenRate) external onlyManager {
+        require(crowdsalePhase == CrowdsalePhase.Paused);
+        require(_tokenRate != 0);
+        tokenRate = _tokenRate;
+    }
+
 
     // INTERNAL FUNCTIONS
     // ====================
