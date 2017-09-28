@@ -7,8 +7,8 @@ contract ARToken is StandardToken {
 
   // Constants
   // =========
-  string public constant name = "ARToken";
-  string public constant symbol = "ART";
+  string public constant name = "AR Token";
+  string public constant symbol = "AR";
   uint public constant decimals = 2;
   uint public constant TOKEN_LIMIT = 10 * 1e9 * 1e2; // 10 billion tokens, 2 decimals
 
