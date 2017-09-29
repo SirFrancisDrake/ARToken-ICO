@@ -7,7 +7,6 @@ import './VestingWallet.sol';
    /**
     * @dev Prepaid token allocation for a capped crowdsale with bonus structure sliding on sales
     *      Written with OpenZeppelin sources as a rough reference.     
-    *      Modern Token Team for the ICO of Cappasity's ARToken.
     */
 
 contract TokenAllocation is GenericCrowdsale {
