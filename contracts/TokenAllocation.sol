@@ -11,8 +11,7 @@ import './VestingWallet.sol';
 
 contract TokenAllocation is GenericCrowdsale {
     // Events
-    event TokensAllocated(address _beneficiary, uint _contribution, string _currency, string _txHash,
-                          uint _tokensIssued);
+    event TokensAllocated(address _beneficiary, uint _contribution, uint _tokensIssued);
     event BonusIssued(address _beneficiary, uint _bonusTokensIssued);
     event FoundersAndPartnersTokensIssued(address _foundersWallet, uint _tokensForFounders, 
                                           address _partnersWallet, uint _tokensForPartners);
@@ -21,14 +20,14 @@ contract TokenAllocation is GenericCrowdsale {
     uint public tokenRate = 125; // 1 USD = 125 ARTokens; so 1 cent = 1.25 ARTokens \
                                    // assuming ARToken has 2 decimals (as set in token contract)
     ARToken public tokenContract;
-    address foundersWallet; // A wallet permitted to request tokens from the time vaults.
-    address partnersWallet; // A wallet that distributes the tokens to early contributors.
+    address public foundersWallet; // A wallet permitted to request tokens from the time vaults.
+    address public partnersWallet; // A wallet that distributes the tokens to early contributors.
     address public icoManager;
     address public icoBackend;
     
     // Crowdsale progress
-    uint constant hardCap     = 5 * 1e7 * 1e2; // 50 000 000 dollars * 100 cents per dollar
-    uint constant phaseOneCap = 3 * 1e7 * 1e2; // 30 000 000 dollars * 100 cents per dollar
+    uint constant public hardCap     = 5 * 1e7 * 1e2; // 50 000 000 dollars * 100 cents per dollar
+    uint constant public phaseOneCap = 3 * 1e7 * 1e2; // 30 000 000 dollars * 100 cents per dollar
     uint public totalCentsGathered = 0;
     // Total sum gathered in phase one, need this to adjust the bonus tiers in phase two.
     // Updated only once, when the phase one is concluded.
@@ -37,8 +36,7 @@ contract TokenAllocation is GenericCrowdsale {
     // Total tokens issued in phase one, including bonuses. Need this to correctly calculate the founders' \
     // share and issue it in parts, once after each round. Updated when issuing tokens.
     uint public tokensDuringPhaseOne = 0;
-    VestingWallet public vestingWalletPhaseOne;
-    VestingWallet public vestingWalletPhaseTwo;
+    VestingWallet public vestingWallet;
 
     enum CrowdsalePhase { PhaseOne, Paused, PhaseTwo, Finished }
     enum BonusPhase { TenPercent, FivePercent, None }
@@ -79,14 +77,11 @@ contract TokenAllocation is GenericCrowdsale {
     // ====================
     /**
      * @dev Issues tokens for a particular address as for a contribution of size _contribution, \
-     *          \ then issues bonuses in proportion. Currency and txHash passed for tracking.
+     *          \ then issues bonuses in proportion. 
      * @param _beneficiary Receiver of the tokens.
      * @param _contribution Size of the contribution (in USD cents).
-     * @param _currency Ticker of the currency that this contribution was made in.
-     * @param _txHash Hash of the received transaction in whatever currency was accepted.
      */ 
-    function issueTokens(address _beneficiary, uint _contribution, 
-                         string _currency, string _txHash) external onlyBackend onlyValidPhase onlyUnpaused {
+    function issueTokens(address _beneficiary, uint _contribution) external onlyBackend onlyValidPhase onlyUnpaused {
         require( totalCentsGathered + _contribution <= hardCap );
         if (crowdsalePhase == CrowdsalePhase.PhaseOne)
             require( totalCentsGathered + _contribution <= phaseOneCap );
@@ -109,7 +104,7 @@ contract TokenAllocation is GenericCrowdsale {
             } else contributionPart = remainingContribution;
             tokensToMint = tokenRate * contributionPart;
             tokenContract.mint(_beneficiary, tokensToMint);
-            TokensAllocated(_beneficiary, contributionPart, _currency, _txHash, tokensToMint);
+            TokensAllocated(_beneficiary, contributionPart, tokensToMint);
 
             bonus = calculateBonus(contributionPart);
             if (bonus>0) tokenContract.mint(_beneficiary, bonus);
@@ -141,19 +136,13 @@ contract TokenAllocation is GenericCrowdsale {
         tokenContract.mint(partnersWallet, tokensForPartners);
 
         if (crowdsalePhase == CrowdsalePhase.PhaseOne) {
-            vestingWalletPhaseOne = new VestingWallet(foundersWallet, 
-                                                      address(tokenContract), 
-                                                      tokensForFounders);
-            tokenContract.mint(vestingWalletPhaseOne, tokensForFounders);
-            FoundersAndPartnersTokensIssued(vestingWalletPhaseOne, tokensForFounders, 
-                                            partnersWallet, tokensForPartners);
+            vestingWallet = new VestingWallet(foundersWallet, address(tokenContract));
+            tokenContract.mint(vestingWallet, tokensForFounders);
+            FoundersAndPartnersTokensIssued(vestingWallet, tokensForFounders, partnersWallet, tokensForPartners);
         } else if (crowdsalePhase == CrowdsalePhase.PhaseTwo) {
-            vestingWalletPhaseTwo = new VestingWallet(foundersWallet, 
-                                                      address(tokenContract), 
-                                                      tokensForFounders);
-            tokenContract.mint(vestingWalletPhaseTwo, tokensForFounders);
-            FoundersAndPartnersTokensIssued(vestingWalletPhaseTwo, tokensForFounders, 
-                                            partnersWallet, tokensForPartners);
+            tokenContract.mint(vestingWallet, tokensForFounders);
+            vestingWallet.launchVesting();
+            FoundersAndPartnersTokensIssued(vestingWallet, tokensForFounders, partnersWallet, tokensForPartners);
         }
         
       // Store the total sum collected during phase one for calculations in phase two. Enable token transfer.   
