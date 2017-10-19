@@ -40,6 +40,15 @@ contract GenericCrowdsale {
     function issueTokens(address _beneficiary, uint _contribution) onlyBackend onlyUnpaused external;
 
     /**
+     * @dev Issues tokens for the off-chain contributors by accepting calls from the trusted address. 
+     *        Supposed to be run by the backend.
+     * @param _beneficiary Token holder.
+     * @param _contribution The equivalent (in USD cents) of the contribution received off-chain.
+     * @param _bonus Custom bonus size in percents, will be issued as one batch after the contribution. 
+     */
+    function issueTokensWithCustomBonus(address _beneficiary, uint _contribution, uint _bonus) onlyBackend onlyUnpaused external;
+
+    /**
      * @dev Pauses the token allocation process.
      */
     function pause() onlyManager external {

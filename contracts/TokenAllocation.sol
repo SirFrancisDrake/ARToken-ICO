@@ -121,6 +121,53 @@ contract TokenAllocation is GenericCrowdsale {
     }
 
     /**
+     * @dev Issues tokens for the off-chain contributors by accepting calls from the trusted address. 
+     *        Supposed to be run by the backend.
+     * @param _beneficiary Token holder.
+     * @param _contribution The equivalent (in USD cents) of the contribution received off-chain.
+     * @param _bonus Custom bonus size in percents, will be issued as one batch after the contribution. 
+     */
+    function issueTokensWithCustomBonus(address _beneficiary, uint _contribution, uint _bonus) 
+                                            onlyBackend onlyUnpaused external;
+        require( totalCentsGathered + _contribution <= hardCap );
+        if (crowdsalePhase == CrowdsalePhase.PhaseOne)
+            require( totalCentsGathered + _contribution <= phaseOneCap );
+
+        uint centsLeftInPhase;
+        uint remainingContribution = _contribution;
+        uint contributionPart;
+        uint bonus;
+
+        totalCentsGathered += _contribution;
+
+        // Advance bonus phases as needed with contribution filling the bonus tiers.
+        do {
+            if (bonusPhase != BonusPhase.None) {
+                centsLeftInPhase = ((totalCentsGathered - centsInPhaseOne) / bonusTierSize + 1) * bonusTierSize - 
+                                                                            (totalCentsGathered - centsInPhaseOne);
+                contributionPart = min(centsLeftInPhase, remainingContribution);
+            } else contributionPart = remainingContribution;
+
+            if ((bonusPhase != BonusPhase.None) && (centsLeftInPhase == contributionPart))
+                advanceBonusPhase();
+            remainingContribution -= contributionPart;
+        } while (remainingContribution > 0);
+
+        tokensToMint = _contribution * tokenRate;
+        tokenContract.mint(_beneficiary, tokensToMint);
+        TokensAllocated(_beneficiary, _contribution, tokensToMint);
+
+        bonus = _contribution * _bonus / 100;
+        TokenContract.mint(_beneficiary, bonus);
+        BonusIssued(_beneficiary, bonus);
+
+        totalTokenSupply += tokensToMint + bonus;
+        if (crowdsalePhase == CrowdsalePhase.PhaseOne) {
+            tokensDuringPhaseOne += tokensToMint + bonus;
+        }
+    }
+
+    /**
      * @dev Issue tokens for founders and partners, end the current phase.
      */
     function rewardFoundersAndPartners() external onlyBackend onlyValidPhase onlyUnpaused {
