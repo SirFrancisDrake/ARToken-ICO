@@ -128,7 +128,7 @@ contract TokenAllocation is GenericCrowdsale {
      * @param _bonus Custom bonus size in percents, will be issued as one batch after the contribution. 
      */
     function issueTokensWithCustomBonus(address _beneficiary, uint _contribution, uint _bonus) 
-                                            onlyBackend onlyUnpaused external;
+                                            onlyBackend onlyUnpaused external {
         require( totalCentsGathered + _contribution <= hardCap );
         if (crowdsalePhase == CrowdsalePhase.PhaseOne)
             require( totalCentsGathered + _contribution <= phaseOneCap );
@@ -153,12 +153,12 @@ contract TokenAllocation is GenericCrowdsale {
             remainingContribution -= contributionPart;
         } while (remainingContribution > 0);
 
-        tokensToMint = _contribution * tokenRate;
+        uint tokensToMint = _contribution * tokenRate;
         tokenContract.mint(_beneficiary, tokensToMint);
         TokensAllocated(_beneficiary, _contribution, tokensToMint);
 
         bonus = _contribution * _bonus / 100;
-        TokenContract.mint(_beneficiary, bonus);
+        tokenContract.mint(_beneficiary, bonus);
         BonusIssued(_beneficiary, bonus);
 
         totalTokenSupply += tokensToMint + bonus;
