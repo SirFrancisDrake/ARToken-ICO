@@ -90,8 +90,17 @@ contract TokenAllocation is GenericCrowdsale {
         uint remainingContribution = _contribution;
         uint contributionPart;
         uint tokensToMint;
-        uint bonus;
+        uint sizeBonus = 0;
+        uint tierBonus = 0;
 
+        // Contribution size bonuses
+        if (crowdsalePhase == CrowdsalePhase.PhaseOne) {
+            // 5% for contributions above bigContributionBound
+            if (_contribution >= bigContributionBound)  sizeBonus += _contribution * 5 / 100;
+            // additional 5% for contributions above hugeContributionBound, 10% total
+            if (_contribution >= hugeContributionBound) sizeBonus += _contribution * 5 / 100;
+            sizeBonus *= tokenRate;
+        }
         // Check if the contribution fills the current bonus phase. If so, break it up in parts,
         // mint tokens for each part separately, assign bonuses, trigger events. For transparency.
         do {
@@ -104,20 +113,23 @@ contract TokenAllocation is GenericCrowdsale {
             tokenContract.mint(_beneficiary, tokensToMint);
             TokensAllocated(_beneficiary, contributionPart, tokensToMint);
 
-            bonus = calculateBonus(contributionPart);
-            if (bonus>0) tokenContract.mint(_beneficiary, bonus);
-            BonusIssued(_beneficiary, bonus);
+            tierBonus = calculateBonus(contributionPart);
+            if (tierBonus>0) tokenContract.mint(_beneficiary, tierBonus);
+            BonusIssued(_beneficiary, tierBonus);
             if ((bonusPhase != BonusPhase.None) && (centsLeftInPhase == contributionPart))
                 advanceBonusPhase();
             remainingContribution -= contributionPart;
 
-            totalTokenSupply += tokensToMint + bonus;
+            totalTokenSupply += tokensToMint + sizeBonus + tierBonus;
             if (crowdsalePhase == CrowdsalePhase.PhaseOne) {
-                tokensDuringPhaseOne += tokensToMint + bonus;
+                tokensDuringPhaseOne += tokensToMint + sizeBonus + tierBonus;
             }
 
             totalCentsGathered += contributionPart;
         } while (remainingContribution > 0);
+
+        if (sizeBonus>0) tokenContract.mint(_beneficiary, sizeBonus);
+        BonusIssued(_beneficiary, sizeBonus);
     }
 
     /**
@@ -228,13 +240,6 @@ contract TokenAllocation is GenericCrowdsale {
         // All bonuses are additive and not multiplicative
         // Calculate bonus on contribution size, then convert it to bonus tokens.
         uint bonus = 0;
-        // Contribution size bonuses
-        if (crowdsalePhase == CrowdsalePhase.PhaseOne) {
-            // 5% for contributions above bigContributionBound
-            if (_contribution >= bigContributionBound)  bonus += _contribution * 5 / 100;
-            // additional 5% for contributions above hugeContributionBound, 10% total
-            if (_contribution >= hugeContributionBound) bonus += _contribution * 5 / 100;
-        }
 
         // Bonus tier bonuses. We make sure in issueTokens that the processed contribution \
         // falls entirely into one tier

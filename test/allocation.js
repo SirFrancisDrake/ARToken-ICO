@@ -37,12 +37,10 @@ contract("allocation", function(accounts) {
     it("should issue tokens for $4m with 20% bonus", async () => {
         let acc = accounts[5];
         let expectedAllocations =
-            [[acc,
-            firstSum,
-            firstSum * 125 ]]
+            [[acc, firstSum, firstSum * 125 ]]
         let expectedBonuses = 
-            [[acc,
-            firstSum * 125 * 20 / 100 ]]
+            [[acc, firstSum * 125 * 10 / 100 ], // tier bonus
+             [acc, firstSum * 125 * 10 / 100 ]] // size bonus
 
         let tokenAllocationListener = allocation.TokensAllocated();
         let bonusIssuedListener = allocation.BonusIssued();
@@ -120,16 +118,18 @@ contract("allocation", function(accounts) {
         let acc = accounts[6];
         let expectedAllocations =
             [[acc,
-            bonusTierSize - firstSum,
-            (bonusTierSize - firstSum) * 125 ],
-            [acc,
-            secondSum + firstSum - bonusTierSize,
-            (secondSum + firstSum - bonusTierSize) * 125 ]]
+              bonusTierSize - firstSum,
+              (bonusTierSize - firstSum) * 125 ],
+             [acc,
+              secondSum + firstSum - bonusTierSize,
+              (secondSum + firstSum - bonusTierSize) * 125 ]]
         let expectedBonuses = 
             [[acc,
-            (bonusTierSize - firstSum) * 125 * 20 / 100 ],
-            [acc,
-            (secondSum + firstSum - bonusTierSize) * 125 * 15 / 100]]
+              (bonusTierSize - firstSum) * 125 * 10 / 100 ], // Tier 1 bonus
+             [acc,
+              (secondSum + firstSum - bonusTierSize) * 125 * 5 / 100], // Tier 2 bonus
+             [acc,
+              secondSum * 125 * 10 / 100]] // Size bonus
 
         let tokenAllocationListener = allocation.TokensAllocated();
         let bonusIssuedListener = allocation.BonusIssued();
