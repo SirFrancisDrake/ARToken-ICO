@@ -92,8 +92,6 @@ contract TokenAllocation is GenericCrowdsale {
         uint tokensToMint;
         uint bonus;
 
-        totalCentsGathered += _contribution;
-
         // Check if the contribution fills the current bonus phase. If so, break it up in parts,
         // mint tokens for each part separately, assign bonuses, trigger events. For transparency.
         do {
@@ -118,6 +116,8 @@ contract TokenAllocation is GenericCrowdsale {
                 tokensDuringPhaseOne += tokensToMint + bonus;
             }
         } while (remainingContribution > 0);
+
+        totalCentsGathered += _contribution;
     }
 
     /**
