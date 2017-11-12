@@ -138,8 +138,6 @@ contract TokenAllocation is GenericCrowdsale {
         uint contributionPart;
         uint bonus;
 
-        totalCentsGathered += _contribution;
-
         // Advance bonus phases as needed with contribution filling the bonus tiers.
         do {
             if (bonusPhase != BonusPhase.None) {
@@ -151,6 +149,8 @@ contract TokenAllocation is GenericCrowdsale {
             if ((bonusPhase != BonusPhase.None) && (centsLeftInPhase == contributionPart))
                 advanceBonusPhase();
             remainingContribution -= contributionPart;
+
+            totalCentsGathered += contributionPart;
         } while (remainingContribution > 0);
 
         uint tokensToMint = _contribution * tokenRate;
