@@ -115,9 +115,9 @@ contract TokenAllocation is GenericCrowdsale {
             if (crowdsalePhase == CrowdsalePhase.PhaseOne) {
                 tokensDuringPhaseOne += tokensToMint + bonus;
             }
-        } while (remainingContribution > 0);
 
-        totalCentsGathered += _contribution;
+            totalCentsGathered += contributionPart;
+        } while (remainingContribution > 0);
     }
 
     /**

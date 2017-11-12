@@ -6,8 +6,8 @@ const TokenAllocation = artifacts.require("./TokenAllocation.sol");
 
 var allocation;
 var bonusTierSize = 10 * 1e6 * 1e2;
-var firstSum = 4 * 1e6 * 1e2;
-var secondSum = 9 * 1e6 * 1e2;
+var firstSum = 5 * 1e6 * 1e2;
+var secondSum = 13 * 1e6 * 1e2;
 
 contract("allocation", function(accounts) {
     const [icoManager, icoBackend, foundersWallet, partnersWallet] = accounts;
@@ -112,7 +112,6 @@ contract("allocation", function(accounts) {
     // TEST 4
     it("bonus phase is still Phase One", async function() {
         let bonusPhase = (await allocation.bonusPhase()).toString();
-        console.log(bonusPhase);
         assert.equal(bonusPhase, 0);
     });
 
@@ -135,7 +134,6 @@ contract("allocation", function(accounts) {
         let tokenAllocationListener = allocation.TokensAllocated();
         let bonusIssuedListener = allocation.BonusIssued();
 
-        console.log(Number(await allocation.totalCentsGathered()));
         await allocation.issueTokens(acc, secondSum, {from: icoBackend});
         
         let tokenAllocationLog = await new Promise(
@@ -201,7 +199,6 @@ contract("allocation", function(accounts) {
     // TEST 6
     it("bonus phase is Phase Two", async function() {
         let bonusPhase = (await allocation.bonusPhase()).toString();
-        console.log(bonusPhase);
         assert.equal(bonusPhase, 1);
     });
 })
