@@ -2,23 +2,28 @@ pragma solidity ^0.4.8;
 
 import "./ERC20.sol";
 
-contract StandardToken is ERC20 {
+contract StandardToken is ERC20, SafeMath {
+    mapping (address => uint) balances;
+    mapping (address => mapping (address => uint)) allowed;
 
-    function transfer(address _to, uint _value) returns (bool success) {
-        require(balances[msg.sender] >= _value);
-        balances[msg.sender] -= _value;
-        balances[_to] += _value;
-        Transfer(msg.sender, _to, _value);
-        return true;
+    function transfer(address _to, uint _value) onlyPayloadSize(2 * 32) returns (bool success) {
+        if (balances[msg.sender] >= _value) {
+            balances[msg.sender] = safeSub(balances[msg.sender], _value);
+            balances[_to] = safeAdd(balances[_to], _value);
+
+            Transfer(msg.sender, _to, _value);
+            return true;
+        } else return false;
     }
 
     function transferFrom(address _from, address _to, uint _value) returns (bool success) {
-        require(balances[_from] >= _value && allowed[_from][msg.sender] >= _value);
-        balances[_to] += _value;
-        balances[_from] -= _value;
-        allowed[_from][msg.sender] -= _value;
-        Transfer(_from, _to, _value);
-        return true;
+        if ((balances[_from] >= _value) && (allowed[_from][msg.sender] >= value)) {
+            balances[_to]   = safeAdd(balances[_to], _value);
+            balances[_from] = safeSub(balances[_from], _value);
+            allowed[_from][msg.sender] = safeSub(allowed[_from][msg.sender], _value);
+            Transfer(_from, _to, _value);
+            return true;
+        } else return false;
     }
 
     function balanceOf(address _owner) constant returns (uint balance) {
@@ -26,6 +31,8 @@ contract StandardToken is ERC20 {
     }
 
     function approve(address _spender, uint _value) returns (bool success) {
+        require((_value == 0) || (allowed[msg.sender][_spender] == 0));
+
         allowed[msg.sender][_spender] = _value;
         Approval(msg.sender, _spender, _value);
         return true;
@@ -35,6 +42,20 @@ contract StandardToken is ERC20 {
       return allowed[_owner][_spender];
     }
 
-    mapping (address => uint) balances;
-    mapping (address => mapping (address => uint)) allowed;
+    function increaseApproval (address _spender, uint _addedValue) public returns (bool success) {
+        allowed[msg.sender][_spender] = safeAdd(allowed[msg.sender][_spender], _addedValue);
+        Approval(msg.sender, _spender, allowed[msg.sender][_spender]);
+        return true;
+    }
+
+    function decreaseApproval (address _spender, uint _subtractedValue) public returns (bool success) {
+        uint oldValue = allowed[msg.sender][_spender];
+        if (_subtractedValue > oldValue) {
+            allowed[msg.sender][_spender] = 0;
+        } else {
+            allowed[msg.sender][_spender] = safeSub(oldValue, _subtractedValue);
+        }
+        Approval(msg.sender, _spender, allowed[msg.sender][_spender]);
+        return true;
+    }
 }
