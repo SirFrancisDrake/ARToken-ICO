@@ -1,6 +1,7 @@
-pragma solidity ^0.4.8;
+pragma solidity ^0.4.15;
 
 import "./ERC20.sol";
+import "./SafeMath.sol";
 
 contract StandardToken is ERC20, SafeMath {
     mapping (address => uint) balances;
@@ -17,7 +18,7 @@ contract StandardToken is ERC20, SafeMath {
     }
 
     function transferFrom(address _from, address _to, uint _value) returns (bool success) {
-        if ((balances[_from] >= _value) && (allowed[_from][msg.sender] >= value)) {
+        if ((balances[_from] >= _value) && (allowed[_from][msg.sender] >= _value)) {
             balances[_to]   = safeAdd(balances[_to], _value);
             balances[_from] = safeSub(balances[_from], _value);
             allowed[_from][msg.sender] = safeSub(allowed[_from][msg.sender], _value);
@@ -30,16 +31,16 @@ contract StandardToken is ERC20, SafeMath {
         return balances[_owner];
     }
 
+    function allowance(address _owner, address _spender) constant returns (uint remaining) {
+      return allowed[_owner][_spender];
+    }
+
     function approve(address _spender, uint _value) returns (bool success) {
         require((_value == 0) || (allowed[msg.sender][_spender] == 0));
 
         allowed[msg.sender][_spender] = _value;
         Approval(msg.sender, _spender, _value);
         return true;
-    }
-
-    function allowance(address _owner, address _spender) constant returns (uint remaining) {
-      return allowed[_owner][_spender];
     }
 
     function increaseApproval (address _spender, uint _addedValue) public returns (bool success) {
@@ -57,5 +58,10 @@ contract StandardToken is ERC20, SafeMath {
         }
         Approval(msg.sender, _spender, allowed[msg.sender][_spender]);
         return true;
+    }
+
+    modifier onlyPayloadSize(uint _size) {
+         require(msg.data.length >= _size + 4);
+         _;
     }
 }

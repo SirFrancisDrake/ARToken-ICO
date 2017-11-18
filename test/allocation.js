@@ -6,7 +6,7 @@ const TokenAllocation = artifacts.require("./TokenAllocation.sol");
 
 var allocation;
 var bonusTierSize = 10 * 1e6 * 1e2;
-var firstSum = 5 * 1e6 * 1e2;
+var firstSum = 4 * 1e6 * 1e2;
 var secondSum = 13 * 1e6 * 1e2;
 
 contract("allocation", function(accounts) {
@@ -34,7 +34,7 @@ contract("allocation", function(accounts) {
     let testSum = (allocation, sum, expectedAllocations, expectedBonuses) => {
     }
 
-    it("should issue tokens for $4m with 20% bonus", async () => {
+    it("should issue tokens for " + String(firstSum / 1e6 / 1e2) + "m with 20% bonus", async () => {
         let acc = accounts[5];
         let expectedAllocations =
             [[acc, firstSum, firstSum * 125 ]]
@@ -102,7 +102,7 @@ contract("allocation", function(accounts) {
         let token = ERC20.at(await allocation.tokenContract());
         let balance = await token.balanceOf(acc);
 
-        assert.equal(balance,
+        assert.equal(Number(balance),
                      totalTokens,
                      "beneficiary should actually receive tokens");
     });
