@@ -1,4 +1,4 @@
-pragma solidity ^0.4.15;
+pragma solidity ^0.4.18;
 
 import './ARToken.sol';
 import './GenericCrowdsale.sol';
@@ -137,7 +137,7 @@ contract TokenAllocation is GenericCrowdsale, SafeMath {
      * @param _bonus Custom bonus size in percents, will be issued as one batch after the contribution. 
      */
     function issueTokensWithCustomBonus(address _beneficiary, uint _contribution, uint _bonus) 
-                                            onlyBackend onlyUnpaused external {
+                                            onlyBackend  onlyValidPhase onlyUnpaused external {
         require( totalCentsGathered + _contribution <= hardCap );
         if (crowdsalePhase == CrowdsalePhase.PhaseOne) {
             require( totalCentsGathered + _contribution <= phaseOneCap );
@@ -214,24 +214,19 @@ contract TokenAllocation is GenericCrowdsale, SafeMath {
    }
 
     /**
-     * @dev Start the second phase of token allocation. Can only be called by the crowdsale manager.
-     */
-    function beginPhaseTwo() external onlyManager {
-        require( crowdsalePhase == CrowdsalePhase.BetweenPhases );
-        crowdsalePhase = CrowdsalePhase.PhaseTwo;
-        bonusPhase = BonusPhase.TenPercent;
-        tokenContract.startMinting();
-    }
-
-    /**
-     * @dev Set the ART / 1 USD rate. Can only be called by the crowdsale manager in between the phases.
+     * @dev Set the ART / USD rate for Phase two, and then start the second phase of token allocation. 
+     *        Can only be called by the crowdsale manager.
      * _tokenRate How many ART per 1 USD cent. As dollars, ART has two decimals.
      *            For instance: tokenRate = 125 means "1.25 ART per USD cent" <=> "125 ART per USD".
      */
-    function setRateForPhaseTwo(uint _tokenRate) external onlyManager {
-        require(crowdsalePhase == CrowdsalePhase.BetweenPhases);
+    function beginPhaseTwo(uint _tokenRate) external onlyManager {
+        require( crowdsalePhase == CrowdsalePhase.BetweenPhases );
         require(_tokenRate != 0);
+
         tokenRate = _tokenRate;
+        crowdsalePhase = CrowdsalePhase.PhaseTwo;
+        bonusPhase = BonusPhase.TenPercent;
+        tokenContract.startMinting();
     }
 
     // INTERNAL FUNCTIONS
@@ -239,11 +234,15 @@ contract TokenAllocation is GenericCrowdsale, SafeMath {
     function calculateCentsLeftInPhase (uint _remainingContribution)
                     internal 
                     returns(uint) {
+        // Ten percent bonuses happen in both Phase One and Phase two, therefore:
+        // Take the bonus tier size, subtract the total money gathered in the current phase
         if (bonusPhase == BonusPhase.TenPercent) {
             return safeSub( bonusTierSize, 
                             safeSub( totalCentsGathered, 
                                      centsInPhaseOne ) );
         } else if (bonusPhase == BonusPhase.FivePercent) {
+            // Five percent bonuses only happen in Phase One, so no need to account
+            // for the first phase separately.
             return safeSub( safeMul(bonusTierSize, 2), totalCentsGathered );
         } else return _remainingContribution;
     }
@@ -302,7 +301,7 @@ contract TokenAllocation is GenericCrowdsale, SafeMath {
         }
     }
 
-    function min(uint _a, uint _b) constant internal returns (uint result) {
+    function min(uint _a, uint _b) internal pure returns (uint result) {
         if (_a < _b) return _a;
         else return _b;
     }

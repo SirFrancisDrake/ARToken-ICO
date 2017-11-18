@@ -1,5 +1,5 @@
 
-pragma solidity ^0.4.11;
+pragma solidity ^0.4.18;
 
 import "./StandardToken.sol";
 
@@ -9,7 +9,7 @@ contract ARToken is StandardToken {
   // =========
   string public constant name = "ARToken";
   string public constant symbol = "AR";
-  uint public constant decimals = 2;
+  uint8 public constant decimals = 2;
   uint public constant TOKEN_LIMIT = 10 * 1e9 * 1e2; // 10 billion tokens, 2 decimals
 
   // State variables
@@ -28,17 +28,17 @@ contract ARToken is StandardToken {
 
   // ERC20 functions
   // =========================
-  function transfer(address _to, uint _value) returns (bool success) {
+  function transfer(address _to, uint _value) public returns (bool success) {
     require(!tokensAreFrozen);
     super.transfer(_to, _value);
   }
 
-  function transferFrom(address _from, address _to, uint _value) returns (bool success) {
+  function transferFrom(address _from, address _to, uint _value) public returns (bool success) {
     require(!tokensAreFrozen);
     super.transferFrom(_from, _to, _value);
   }
 
-  function approve(address _spender, uint _value) returns (bool success) {
+  function approve(address _spender, uint _value) public returns (bool success) {
     require(!tokensAreFrozen);
     super.approve(_spender, _value);
   }
