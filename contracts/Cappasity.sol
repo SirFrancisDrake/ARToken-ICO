@@ -3,12 +3,12 @@ pragma solidity ^0.4.18;
 
 import "./StandardToken.sol";
 
-contract ARToken is StandardToken {
+contract Cappasity is StandardToken {
 
   // Constants
   // =========
-  string public constant name = "ARToken";
-  string public constant symbol = "AR";
+  string public constant name = "Cappasity";
+  string public constant symbol = "CAPP";
   uint8 public constant decimals = 2;
   uint public constant TOKEN_LIMIT = 10 * 1e9 * 1e2; // 10 billion tokens, 2 decimals
 
@@ -22,7 +22,7 @@ contract ARToken is StandardToken {
 
   // Constructor
   // ===========
-  function ARToken(address _manager) {
+  function Cappasity(address _manager) {
     manager = _manager;
   }
 

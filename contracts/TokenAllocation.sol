@@ -1,6 +1,6 @@
 pragma solidity ^0.4.18;
 
-import './ARToken.sol';
+import './Cappasity.sol';
 import './GenericCrowdsale.sol';
 import './SafeMath.sol';
 import './VestingWallet.sol';
@@ -18,9 +18,9 @@ contract TokenAllocation is GenericCrowdsale, SafeMath {
                                           address _partnersWallet, uint _tokensForPartners);
 
     // Token information
-    uint public tokenRate = 125; // 1 USD = 125 ARTokens; so 1 cent = 1.25 ARTokens \
-                                   // assuming ARToken has 2 decimals (as set in token contract)
-    ARToken public tokenContract;
+    uint public tokenRate = 125; // 1 USD = 125 CAPP; so 1 cent = 1.25 CAPP \
+                                   // assuming CAPP has 2 decimals (as set in token contract)
+    Cappasity public tokenContract;
 
     address public foundersWallet; // A wallet permitted to request tokens from the time vaults.
     address public partnersWallet; // A wallet that distributes the tokens to early contributors.
@@ -67,7 +67,7 @@ contract TokenAllocation is GenericCrowdsale, SafeMath {
         require(_foundersWallet != 0x0);
         require(_partnersWallet != 0x0);
         
-        tokenContract = new ARToken(address(this));
+        tokenContract = new Cappasity(address(this));
 
         icoManager       = _icoManager;
         icoBackend       = _icoBackend;
@@ -221,10 +221,10 @@ contract TokenAllocation is GenericCrowdsale, SafeMath {
    }
 
     /**
-     * @dev Set the ART / USD rate for Phase two, and then start the second phase of token allocation. 
+     * @dev Set the CAPP / USD rate for Phase two, and then start the second phase of token allocation. 
      *        Can only be called by the crowdsale manager.
-     * _tokenRate How many ART per 1 USD cent. As dollars, ART has two decimals.
-     *            For instance: tokenRate = 125 means "1.25 ART per USD cent" <=> "125 ART per USD".
+     * _tokenRate How many CAPP per 1 USD cent. As dollars, CAPP has two decimals.
+     *            For instance: tokenRate = 125 means "1.25 CAPP per USD cent" <=> "125 CAPP per USD".
      */
     function beginPhaseTwo(uint _tokenRate) external onlyManager {
         require( crowdsalePhase == CrowdsalePhase.BetweenPhases );
