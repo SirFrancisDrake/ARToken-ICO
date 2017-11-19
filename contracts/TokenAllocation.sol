@@ -24,8 +24,6 @@ contract TokenAllocation is GenericCrowdsale, SafeMath {
 
     address public foundersWallet; // A wallet permitted to request tokens from the time vaults.
     address public partnersWallet; // A wallet that distributes the tokens to early contributors.
-    address public icoManager;
-    address public icoBackend;
     
     // Crowdsale progress
     uint constant public hardCap     = 5 * 1e7 * 1e2; // 50 000 000 dollars * 100 cents per dollar
@@ -85,7 +83,7 @@ contract TokenAllocation is GenericCrowdsale, SafeMath {
      * @param _beneficiary Receiver of the tokens.
      * @param _contribution Size of the contribution (in USD cents).
      */ 
-    function issueTokens(address _beneficiary, uint _contribution) external onlyBackend onlyValidPhase onlyUnpaused {
+    function issueTokens(address _beneficiary, uint _contribution) external onlyOffChain onlyValidPhase onlyUnpaused {
         require( totalCentsGathered + _contribution <= hardCap );
         if (crowdsalePhase == CrowdsalePhase.PhaseOne) {
             require( totalCentsGathered + _contribution <= phaseOneCap );
@@ -111,14 +109,17 @@ contract TokenAllocation is GenericCrowdsale, SafeMath {
                 mintAndUpdate( _beneficiary, tierBonus );
             }
             BonusIssued( _beneficiary, tierBonus );
+
+            // 5 - advance bonus phase
             if ((bonusPhase != BonusPhase.None) && (contributionPart == centsLeftInPhase)) {
                 advanceBonusPhase();
             }
 
-            // 5 - log the processed part of the contribution
+            // 6 - log the processed part of the contribution
             totalCentsGathered = safeAdd( totalCentsGathered, contributionPart );
             remainingContribution = safeSub( remainingContribution, contributionPart );
-            // 6 - continue?
+
+            // 7 - continue?
         } while (remainingContribution > 0);
 
         // Mint contribution size bonus
@@ -137,7 +138,7 @@ contract TokenAllocation is GenericCrowdsale, SafeMath {
      * @param _bonus Custom bonus size in percents, will be issued as one batch after the contribution. 
      */
     function issueTokensWithCustomBonus(address _beneficiary, uint _contribution, uint _bonus) 
-                                            onlyBackend  onlyValidPhase onlyUnpaused external {
+                                            onlyOffChain  onlyValidPhase onlyUnpaused external {
         require( totalCentsGathered + _contribution <= hardCap );
         if (crowdsalePhase == CrowdsalePhase.PhaseOne) {
             require( totalCentsGathered + _contribution <= phaseOneCap );
@@ -165,7 +166,12 @@ contract TokenAllocation is GenericCrowdsale, SafeMath {
             if ((remainingContribution == centsLeftInPhase) && (bonusPhase != BonusPhase.None)) {
                 advanceBonusPhase();
             }
-            // 5 - continue?
+
+            // 5 - log the processed part of the contribution
+            totalCentsGathered = safeAdd( totalCentsGathered, contributionPart );
+            remainingContribution = safeSub( remainingContribution, contributionPart );
+
+            // 6 - continue?
         } while (remainingContribution > 0);
 
         // Mint custom bonus
@@ -176,7 +182,7 @@ contract TokenAllocation is GenericCrowdsale, SafeMath {
     /**
      * @dev Issue tokens for founders and partners, end the current phase.
      */
-    function rewardFoundersAndPartners() external onlyBackend onlyValidPhase onlyUnpaused {
+    function rewardFoundersAndPartners() external onlyOffChain onlyValidPhase onlyUnpaused {
         uint tokensDuringThisPhase;
         if (crowdsalePhase == CrowdsalePhase.PhaseOne) {
             tokensDuringThisPhase = totalTokenSupply;
@@ -193,9 +199,9 @@ contract TokenAllocation is GenericCrowdsale, SafeMath {
 
         if (crowdsalePhase == CrowdsalePhase.PhaseOne) {
             vestingWallet = new VestingWallet(foundersWallet, address(tokenContract));
-            tokenContract.mint(vestingWallet, tokensForFounders);
-            FoundersAndPartnersTokensIssued(vestingWallet, tokensForFounders, 
-                                            partnersWallet, tokensForPartners);
+            tokenContract.mint(address(vestingWallet), tokensForFounders);
+            FoundersAndPartnersTokensIssued(address(vestingWallet), tokensForFounders, 
+                                            partnersWallet,         tokensForPartners);
 
          // Store the total sum collected during phase one for calculations in phase two. 
          centsInPhaseOne = totalCentsGathered;
@@ -203,10 +209,10 @@ contract TokenAllocation is GenericCrowdsale, SafeMath {
          tokenContract.unfreeze();
          crowdsalePhase = CrowdsalePhase.BetweenPhases;
         } else {
-            tokenContract.mint(vestingWallet, tokensForFounders);
+            tokenContract.mint(address(vestingWallet), tokensForFounders);
             vestingWallet.launchVesting();
-            FoundersAndPartnersTokensIssued(vestingWallet, tokensForFounders, 
-                                            partnersWallet, tokensForPartners);
+            FoundersAndPartnersTokensIssued(address(vestingWallet), tokensForFounders, 
+                                            partnersWallet,         tokensForPartners);
           crowdsalePhase = CrowdsalePhase.Finished;
         }
         
@@ -317,7 +323,7 @@ contract TokenAllocation is GenericCrowdsale, SafeMath {
         _;
     }
 
-    modifier onlyBackend() {
+    modifier onlyOffChain() {
         require( msg.sender == icoBackend );
         _;
     }

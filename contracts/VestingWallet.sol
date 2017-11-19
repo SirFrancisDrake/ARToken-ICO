@@ -44,9 +44,9 @@ contract VestingWallet is SafeMath {
 
         uint tokensToRelease = 0;
         do {
-            periodsPassed   += 1;
-            nextPeriod      += cliffPeriod;
-            tokensToRelease += tokensPerBatch;
+            periodsPassed   = safeAdd(periodsPassed, 1);
+            nextPeriod      = safeAdd(nextPeriod, cliffPeriod);
+            tokensToRelease = safeAdd(tokensToRelease, tokensPerBatch);
         } while (now > nextPeriod);
 
         // If vesting has finished, just transfer the remaining tokens.
@@ -64,7 +64,7 @@ contract VestingWallet is SafeMath {
         require( false == vestingStarted );
 
         tokensRemaining = tokenContract.balanceOf(this);
-        nextPeriod      = now + cliffPeriod;
+        nextPeriod      = safeAdd(now, cliffPeriod);
         tokensPerBatch  = tokensRemaining / totalPeriods;
     }
 

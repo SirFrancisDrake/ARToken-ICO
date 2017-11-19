@@ -28,17 +28,17 @@ contract ARToken is StandardToken {
 
   // ERC20 functions
   // =========================
-  function transfer(address _to, uint _value) public returns (bool success) {
+  function transfer(address _to, uint _value) public returns (bool) {
     require(!tokensAreFrozen);
     super.transfer(_to, _value);
   }
 
-  function transferFrom(address _from, address _to, uint _value) public returns (bool success) {
+  function transferFrom(address _from, address _to, uint _value) public returns (bool) {
     require(!tokensAreFrozen);
     super.transferFrom(_from, _to, _value);
   }
 
-  function approve(address _spender, uint _value) public returns (bool success) {
+  function approve(address _spender, uint _value) public returns (bool) {
     require(!tokensAreFrozen);
     super.approve(_spender, _value);
   }
@@ -58,11 +58,11 @@ contract ARToken is StandardToken {
     require(totalSupply + _value > totalSupply); 
     require(mintingIsAllowed);
 
-    balances[_beneficiary] += _value;
-    totalSupply += _value;
+    balances[_beneficiary] = safeAdd(balances[_beneficiary], _value);
+    totalSupply = safeAdd( totalSupply,_value );
   }
 
-  // Disable minting. Can be enabled later, but only once (see TokenAllocation.sol)
+  // Disable minting. Can be enabled later, but TokenAllocation.sol only does that once.
   function endMinting() onlyByManager external {
     mintingIsAllowed = false;
   }
