@@ -203,11 +203,12 @@ contract TokenAllocation is GenericCrowdsale, SafeMath {
             FoundersAndPartnersTokensIssued(address(vestingWallet), tokensForFounders, 
                                             partnersWallet,         tokensForPartners);
 
-         // Store the total sum collected during phase one for calculations in phase two. 
-         centsInPhaseOne = totalCentsGathered;
-         // Enable token transfer.   
-         tokenContract.unfreeze();
-         crowdsalePhase = CrowdsalePhase.BetweenPhases;
+            // Store the total sum collected during phase one for calculations in phase two. 
+            centsInPhaseOne = totalCentsGathered;
+            tokensDuringPhaseOne = totalTokenSupply;
+            // Enable token transfer.   
+            tokenContract.unfreeze();
+            crowdsalePhase = CrowdsalePhase.BetweenPhases;
         } else {
             tokenContract.mint(address(vestingWallet), tokensForFounders);
             vestingWallet.launchVesting();

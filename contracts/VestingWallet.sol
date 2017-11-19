@@ -63,6 +63,7 @@ contract VestingWallet is SafeMath {
     function launchVesting() onlyCrowdsale {
         require( false == vestingStarted );
 
+        vestingStarted  = true;
         tokensRemaining = tokenContract.balanceOf(this);
         nextPeriod      = safeAdd(now, cliffPeriod);
         tokensPerBatch  = tokensRemaining / totalPeriods;
